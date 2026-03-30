@@ -1,0 +1,97 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- ── Wallet body (rounded rectangle) ─────────────────────────────────── -->
+    <!--  Outer card: full wallet shape, white with slight transparency         -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="
+          M28,38
+          C28,34.686 30.686,32 34,32
+          L74,32
+          C77.314,32 80,34.686 80,38
+          L80,70
+          C80,73.314 77.314,76 74,76
+          L34,76
+          C30.686,76 28,73.314 28,70
+          Z" />
+
+    <!-- Wallet flap / top strip (teal gradient) -->
+    <path android:pathData="
+          M28,38
+          C28,34.686 30.686,32 34,32
+          L74,32
+          C77.314,32 80,34.686 80,38
+          L80,46
+          L28,46
+          Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="28" android:startY="32"
+                android:endX="80"   android:endY="46">
+                <item android:offset="0.0" android:color="#FF00D4A0" />
+                <item android:offset="1.0" android:color="#FF7B68EE" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Card slot line 1 -->
+    <path
+        android:strokeColor="#220D1117"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M36,56 L58,56" />
+
+    <!-- Card slot line 2 (shorter) -->
+    <path
+        android:strokeColor="#220D1117"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M36,63 L50,63" />
+
+    <!-- Coin / circle accent on right of wallet body -->
+    <path
+        android:fillColor="#1A0D1117"
+        android:pathData="M68,59
+          m-7,0
+          a7,7 0 1,0 14,0
+          a7,7 0 1,0 -14,0" />
+
+    <!-- ── Upward-trending arrow (teal→indigo gradient, bold) ────────────────
+         Arrow sits in top-right quadrant of the safe zone, representing growth  -->
+    <!-- Arrow shaft -->
+    <path
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M60,72 L76,40">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:type="linear"
+                android:startX="60" android:startY="72"
+                android:endX="76"   android:endY="40">
+                <item android:offset="0.0" android:color="#FF00D4A0" />
+                <item android:offset="1.0" android:color="#FF7B68EE" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Arrow head (filled triangle pointing up-right) -->
+    <path android:pathData="M76,40 L64,39 L75,51 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="64" android:startY="39"
+                android:endX="76"   android:endY="51">
+                <item android:offset="0.0" android:color="#FF00D4A0" />
+                <item android:offset="1.0" android:color="#FF7B68EE" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+</vector>

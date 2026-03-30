@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Vault-style hexagonal grid pattern drawn entirely with paths.
+    Used as a repeating layer on the Login/Auth screen background.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="104dp"
+    android:viewportWidth="120"
+    android:viewportHeight="104">
+
+    <!-- Row 1 hex outlines -->
+    <path
+        android:pathData="M30,2 L50,2 L60,19 L50,36 L30,36 L20,19 Z"
+        android:strokeColor="#1A00D4A0"
+        android:strokeWidth="0.8"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M70,2 L90,2 L100,19 L90,36 L70,36 L60,19 Z"
+        android:strokeColor="#1A00D4A0"
+        android:strokeWidth="0.8"
+        android:fillColor="#00000000" />
+
+    <!-- Row 2 (offset) hex outlines -->
+    <path
+        android:pathData="M10,36 L30,36 L40,53 L30,70 L10,70 L0,53 Z"
+        android:strokeColor="#0D7B68EE"
+        android:strokeWidth="0.8"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M50,36 L70,36 L80,53 L70,70 L50,70 L40,53 Z"
+        android:strokeColor="#0D7B68EE"
+        android:strokeWidth="0.8"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M90,36 L110,36 L120,53 L110,70 L90,70 L80,53 Z"
+        android:strokeColor="#0D7B68EE"
+        android:strokeWidth="0.8"
+        android:fillColor="#00000000" />
+
+    <!-- Row 3 hex outlines -->
+    <path
+        android:pathData="M30,70 L50,70 L60,87 L50,104 L30,104 L20,87 Z"
+        android:strokeColor="#1A00D4A0"
+        android:strokeWidth="0.8"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M70,70 L90,70 L100,87 L90,104 L70,104 L60,87 Z"
+        android:strokeColor="#1A00D4A0"
+        android:strokeWidth="0.8"
+        android:fillColor="#00000000" />
+
+    <!-- Tiny lock body (keyhole shape using paths) -->
+    <path
+        android:pathData="M54,50 L54,61 Q54,63 56,63 L64,63 Q66,63 66,61 L66,50 Z"
+        android:fillColor="#1500D4A0"
+        android:strokeColor="#00000000" />
+    <!-- Lock shackle -->
+    <path
+        android:pathData="M56,50 L56,47 Q56,44 60,44 Q64,44 64,47 L64,50"
+        android:strokeColor="#2000D4A0"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:strokeLineCap="round" />
+</vector>

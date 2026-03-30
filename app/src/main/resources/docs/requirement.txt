@@ -1,0 +1,187 @@
+### 🔧 Prompt: Refactor Categories & Migrate Existing Data Safely
+
+You are working on an Android app with Room DB using `CategoryEntity`.
+
+We need to **refactor category structure** and **migrate existing user data safely without data loss**.
+
+---
+
+## 🎯 Objectives
+
+1. Restructure categories (MAIN + SUB)
+2. Remove duplicates
+3. Add new categories
+4. Re-map existing transactions to new categories
+5. Ensure backward compatibility via Room migration
+
+---
+
+## 📦 Existing Entity
+
+```kotlin
+@Entity(tableName = "categories")
+data class CategoryEntity(
+    @PrimaryKey val id: Int,
+    val name: String,
+    val type: String, // MAIN or SUB
+    val parentId: Int?,
+    val icon: String? = null
+)
+```
+
+Assume transactions table has:
+
+```kotlin
+val categoryId: Int
+```
+
+---
+
+## 🔄 Required Changes
+
+### 1. REMOVE / MERGE DUPLICATES
+
+* Merge:
+
+  * "Mobile Recharge" + "Mobile Bills" → "Mobile"
+  * "Gas" + "Gas Cylinder" → "Gas"
+
+👉 While migrating:
+
+* Map old category IDs to new category ID
+
+---
+
+### 2. MOVE CATEGORIES
+
+* Move:
+
+  * "Grocery" → from Food → Household
+  * "Insurance" → from Health → Finance
+
+---
+
+### 3. ADD NEW SUB-CATEGORIES
+
+Under Transport:
+
+* "Vehicle Service"
+* "Parking"
+
+Under Finance:
+
+* "Vehicle Insurance"
+* "Bank Charges"
+
+Under Household:
+
+* "Helper Salary"
+* "House Maintenance"
+
+---
+
+### 4. ADD NEW MAIN CATEGORY
+
+Add:
+
+* "Travel" (MAIN)
+
+Subcategories:
+
+* Flights
+* Hotels
+* Vacation
+
+---
+
+### 5. FINAL CATEGORY CONSISTENCY
+
+* Ensure all categories:
+
+  * Have correct parentId
+  * No duplicates by name
+  * Follow consistent naming
+
+---
+
+## 🧠 DATA MIGRATION REQUIREMENTS
+
+Write a **Room Migration (e.g., MIGRATION_X_Y)** that:
+
+### Step 1: Insert new categories
+
+* Insert new MAIN + SUB categories with new IDs
+
+### Step 2: Create mapping logic
+
+Example mapping:
+
+```kotlin
+val categoryMapping = mapOf(
+    OLD_MOBILE_RECHARGE_ID to NEW_MOBILE_ID,
+    OLD_MOBILE_BILLS_ID to NEW_MOBILE_ID,
+    OLD_GAS_ID to NEW_GAS_ID,
+    OLD_GAS_CYLINDER_ID to NEW_GAS_ID,
+    OLD_GROCERY_ID to NEW_GROCERY_ID, // new parent Household
+    OLD_INSURANCE_ID to NEW_INSURANCE_ID
+)
+```
+
+### Step 3: Update transactions table
+
+```sql
+UPDATE transactions
+SET categoryId = :newId
+WHERE categoryId = :oldId
+```
+
+Loop through all mappings.
+
+---
+
+### Step 4: Delete old categories
+
+* Remove deprecated categories only AFTER mapping
+
+---
+
+## ⚠️ IMPORTANT CONSTRAINTS
+
+* DO NOT lose any transaction data
+* Migration must be idempotent-safe
+* Handle missing categories gracefully
+* Preserve referential integrity
+* Use transactions for migration
+
+---
+
+## 🧪 TESTING REQUIREMENTS
+
+* Test upgrade from old DB version → new version
+* Verify:
+
+  * No orphan transactions
+  * All categories mapped correctly
+  * App does not crash on startup
+
+---
+
+## 📌 DELIVERABLES
+
+1. Updated `DefaultCategories` object
+2. Room Migration class
+3. Mapping logic implementation
+4. Helper function for category mapping
+5. Unit test (if possible)
+
+---
+
+## 🚀 BONUS (Optional)
+
+* Add `type` field for category classification:
+
+  * EXPENSE / TRANSFER / INVESTMENT
+
+---
+
+Write clean, production-ready Kotlin code following best practices.

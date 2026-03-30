@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    XpenseLedger launcher background
+    Deep dark-teal → indigo gradient matching the app's dashboard background (#0D1117 → #1A1F3A),
+    with a subtle radial glow at top-left for depth.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Base gradient fill: dark navy → dark teal -->
+    <path android:pathData="M0,0 L108,0 L108,108 L0,108 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0"
+                android:startY="0"
+                android:endX="108"
+                android:endY="108">
+                <item android:offset="0.0" android:color="#FF0D1117" />
+                <item android:offset="0.5" android:color="#FF0E2030" />
+                <item android:offset="1.0" android:color="#FF1A1F3A" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Radial glow at top-left (teal highlight) -->
+    <path android:pathData="M0,0 L108,0 L108,108 L0,108 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="20"
+                android:centerY="20"
+                android:gradientRadius="60">
+                <item android:offset="0.0" android:color="#3000D4A0" />
+                <item android:offset="1.0" android:color="#00000000" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Radial glow at bottom-right (indigo highlight) -->
+    <path android:pathData="M0,0 L108,0 L108,108 L0,108 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="90"
+                android:centerY="88"
+                android:gradientRadius="55">
+                <item android:offset="0.0" android:color="#287B68EE" />
+                <item android:offset="1.0" android:color="#00000000" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+</vector>

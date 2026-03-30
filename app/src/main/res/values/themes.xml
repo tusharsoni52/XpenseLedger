@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base theme: dark window prevents flash of white before Compose renders -->
+    <style name="Theme.XpenseLedger" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/xpense_dark_bg</item>
+        <item name="android:statusBarColor">@color/xpense_dark_bg</item>
+        <item name="android:navigationBarColor">@color/xpense_dark_bg</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>
