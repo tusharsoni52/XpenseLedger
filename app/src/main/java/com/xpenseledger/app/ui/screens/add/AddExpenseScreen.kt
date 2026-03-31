@@ -86,6 +86,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.xpenseledger.app.domain.model.Category
 import com.xpenseledger.app.domain.model.Expense
+import com.xpenseledger.app.domain.model.TransactionType
 import com.xpenseledger.app.ui.components.SoftGradientBackground
 import com.xpenseledger.app.ui.components.categoryBadgeColor
 import com.xpenseledger.app.ui.theme.DarkError
@@ -132,24 +133,33 @@ fun AddExpenseScreen(
         subCategory:   String?,
         categoryId:    Long,
         subCategoryId: Long?,
-        timestamp:     Long
+        timestamp:     Long,
+        type:          TransactionType
     ) -> Unit,
     editExpense:       Expense? = null,
     initialTimestamp:  Long     = System.currentTimeMillis()
 ) {
-    val mainCategories by categoryVm.mainCategories.collectAsState()
+    // Collect all categories once; filter synchronously per transaction type
+    // so the list reacts instantly when the user taps Expense / Income / Transfer.
+    val allMainCategories by categoryVm.mainCategories.collectAsState()
 
     // ── Form state ────────────────────────────────────────────────────────────
     val form = remember(editExpense) {
         AddExpenseFormState(
-            initialTitle     = editExpense?.title   ?: "",
-            initialAmount    = editExpense?.amount?.toString() ?: "",
-            initialTimestamp = editExpense?.timestamp ?: initialTimestamp
+            initialTitle           = editExpense?.title   ?: "",
+            initialAmount          = editExpense?.amount?.toString() ?: "",
+            initialTimestamp       = editExpense?.timestamp ?: initialTimestamp,
+            initialTransactionType = editExpense?.type ?: TransactionType.EXPENSE
         )
     }
 
+    // ── Category list filtered by current transaction type ────────────────────
+    // Recomputes on every recomposition when form.transactionType changes.
+    val mainCategories = remember(form.transactionType, allMainCategories) {
+        categoryVm.mainCategoriesFor(form.transactionType)
+    }
+
     val keyboard = LocalSoftwareKeyboardController.current
-    // Debounce prevents double-submit if the user taps twice quickly
     val safeConfirm = rememberDebouncedClick(debounceMs = 800L) {
         keyboard?.hide()
         form.touchAll()
@@ -161,12 +171,12 @@ fun AddExpenseScreen(
             form.subCat?.name,
             form.mainCat!!.id,
             form.subCat?.id,
-            form.timestamp
+            form.timestamp,
+            form.transactionType
         )
     }
 
-
-    // Pre-select categories once the category list arrives (edit mode)
+    // Pre-select category in edit mode once the category list is ready
     LaunchedEffect(mainCategories) {
         if (form.mainCat == null && editExpense != null && mainCategories.isNotEmpty()) {
             form.mainCat = mainCategories.firstOrNull {
@@ -175,7 +185,25 @@ fun AddExpenseScreen(
         }
     }
 
-    val subList = form.mainCat?.let { categoryVm.subCategoriesFor(it.id) } ?: emptyList()
+    // Auto-select when there is only ONE valid category for the chosen type
+    // (Income → "Income"; Transfer → "Finance"). Clears when switching away.
+    LaunchedEffect(form.transactionType, mainCategories) {
+        if (editExpense == null && mainCategories.size == 1) {
+            form.mainCat = mainCategories.first()
+        }
+    }
+
+    val subList = form.mainCat?.let {
+        categoryVm.subCategoriesFor(it.id, form.transactionType)
+    } ?: emptyList()
+
+    // Auto-select single subcategory when only one is available
+    // (Transfer tab: Finance has only Family Support visible → auto-pick it)
+    LaunchedEffect(subList) {
+        if (editExpense == null && subList.size == 1 && form.subCat == null) {
+            form.subCat = subList.first()
+        }
+    }
 
     LaunchedEffect(form.mainCat) {
         if (form.subCat == null && editExpense != null) {
@@ -235,15 +263,18 @@ fun AddExpenseScreen(
                 //   • The button Surface uses windowInsetsPadding(ime + navigationBars)
                 //     so it always sits just above the keyboard / nav bar.
         ) {
-            // Header
+            // Header — title reflects transaction type
             FormHeaderBar(
-                title     = if (editExpense != null) "Edit Expense" else "Add Expense",
+                title     = if (editExpense != null) "Edit Transaction"
+                            else when (form.transactionType) {
+                                TransactionType.INCOME   -> "Add Income"
+                                TransactionType.TRANSFER -> "Add Transfer"
+                                else                     -> "Add Expense"
+                            },
                 onDismiss = onDismiss
             )
 
-            // Scrollable fields — weight(1f) so they never push the button off screen.
-            // imePadding() here scrolls fields up when the keyboard appears so the
-            // focused field is always visible without displacing the pinned button.
+            // Scrollable fields
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -252,6 +283,20 @@ fun AddExpenseScreen(
                     .padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // ── Transaction Type selector (top of form, always visible) ───
+                if (editExpense == null) {
+                    TopTypeSelector(
+                        selected = form.transactionType,
+                        onSelect = { newType ->
+                            form.transactionType = newType
+                            // When switching to Income, clear category so user picks an income category
+                            // When switching away from Income, also clear so they pick an expense category
+                            form.mainCat = null
+                            form.subCat  = null
+                        }
+                    )
+                }
+
                 // ── Title ─────────────────────────────────────────────────────
                 TitleField(form)
 
@@ -264,6 +309,22 @@ fun AddExpenseScreen(
                     mainCategories = mainCategories,
                     subList        = subList
                 )
+
+                // ── Transfer/Expense toggle (Family Support, EXPENSE tab only) ─
+                // Only shown when the user is on the Expense tab and selects
+                // "Family Support" sub-category — allows marking it as a Transfer.
+                // Hidden on the Transfer tab because the type is already set.
+                AnimatedVisibility(
+                    visible = form.subCat?.name == "Family Support" &&
+                              form.transactionType == TransactionType.EXPENSE,
+                    enter   = fadeIn(tween(200)) + expandVertically(spring(stiffness = Spring.StiffnessMedium)),
+                    exit    = fadeOut(tween(150)) + shrinkVertically(tween(150))
+                ) {
+                    TransactionTypeToggle(
+                        selected  = form.transactionType,
+                        onSelect  = { form.transactionType = it }
+                    )
+                }
 
                 // ── Date ──────────────────────────────────────────────────────
                 DateField(
@@ -337,7 +398,11 @@ fun AddExpenseScreen(
                                 )
                                 Text(
                                     text       = if (editExpense != null) "Save Changes"
-                                                 else "Add Expense",
+                                                 else when (form.transactionType) {
+                                                     TransactionType.INCOME   -> "Add Income"
+                                                     TransactionType.TRANSFER -> "Add Transfer"
+                                                     else                     -> "Add Expense"
+                                                 },
                                     fontWeight = FontWeight.SemiBold,
                                     color      = Color.White
                                 )
@@ -551,6 +616,124 @@ private fun CategorySection(
                 }
             }
         }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Top-level transaction type selector  (Expense / Income / Transfer)
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun TopTypeSelector(
+    selected: TransactionType,
+    onSelect: (TransactionType) -> Unit
+) {
+    val items = listOf(
+        TransactionType.EXPENSE  to ("Expense"  to Color(0xFFF87171)),
+        TransactionType.INCOME   to ("Income"   to Color(0xFF34D399)),
+        TransactionType.TRANSFER to ("Transfer" to Color(0xFFFB923C))
+    )
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text     = "Transaction Type",
+            style    = MaterialTheme.typography.labelMedium,
+            color    = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Row(
+            modifier              = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items.forEach { (type, pair) ->
+                val (label, color) = pair
+                val isSelected = selected == type
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            if (isSelected) color.copy(alpha = 0.20f)
+                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        )
+                        .clickable { onSelect(type) }
+                        .padding(vertical = 11.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text       = label,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                        color      = if (isSelected) color
+                                     else MaterialTheme.colorScheme.onSurfaceVariant,
+                        style      = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Transfer / Expense toggle  (shown only for Family Support sub-category)
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun TransactionTypeToggle(
+    selected: TransactionType,
+    onSelect: (TransactionType) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text  = "Transaction Type",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            listOf(TransactionType.TRANSFER to "Transfer", TransactionType.EXPENSE to "Expense")
+                .forEach { (type, label) ->
+                    val isSelected = selected == type
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                if (isSelected)
+                                    Brush.horizontalGradient(listOf(XpensePrimary, XpenseSecondary))
+                                else
+                                    Brush.horizontalGradient(
+                                        listOf(
+                                            XpensePrimary.copy(alpha = 0.08f),
+                                            XpenseSecondary.copy(alpha = 0.08f)
+                                        )
+                                    )
+                            )
+                            .clickable { onSelect(type) }
+                            .padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text       = label,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                            color      = if (isSelected) Color.White
+                                         else MaterialTheme.colorScheme.onSurfaceVariant,
+                            style      = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+        }
+        // Descriptive hint based on selection
+        Text(
+            text  = if (selected == TransactionType.TRANSFER)
+                        "Transfer — excluded from expense totals"
+                    else
+                        "Expense — counted in your spending totals",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp)
+        )
     }
 }
 

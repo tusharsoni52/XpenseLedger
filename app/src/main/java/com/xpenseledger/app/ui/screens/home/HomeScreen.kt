@@ -14,13 +14,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -32,6 +32,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -53,16 +54,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.xpenseledger.app.domain.model.Expense
+import com.xpenseledger.app.domain.model.TransactionType
 import com.xpenseledger.app.ui.components.CategoryBreakdownCard
 import com.xpenseledger.app.ui.components.DashboardBackground
 import com.xpenseledger.app.ui.components.EmptyExpenseState
+import com.xpenseledger.app.ui.components.FinancialSummaryCard
 import com.xpenseledger.app.ui.components.InputField
 import com.xpenseledger.app.ui.components.SectionHeader
-import com.xpenseledger.app.ui.components.TotalExpenseCard
+import com.xpenseledger.app.ui.components.TransactionRow
 import com.xpenseledger.app.ui.screens.add.AddExpenseScreen
 import com.xpenseledger.app.ui.viewmodel.BackupResult
 import com.xpenseledger.app.ui.viewmodel.CategoryViewModel
@@ -72,10 +75,6 @@ import com.xpenseledger.app.ui.viewmodel.UserProfileViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Month label helper
-// ─────────────────────────────────────────────────────────────────────────────
 
 private val FMT_DISPLAY = SimpleDateFormat("MMM yy", Locale.getDefault())
 private val FMT_KEY     = SimpleDateFormat("yyyy-MM", Locale.US)
@@ -95,9 +94,9 @@ fun HomeScreen(
     categoryVm: CategoryViewModel,
     profileVm:  UserProfileViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
-    val profile by profileVm.profile.collectAsState()
-    val menuExpanded      = remember { mutableStateOf(false) }
-    val snackbarHostState = remember { SnackbarHostState() }
+    val profile           by profileVm.profile.collectAsState()
+    val menuExpanded       = remember { mutableStateOf(false) }
+    val snackbarHostState  = remember { SnackbarHostState() }
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/octet-stream")
@@ -170,7 +169,7 @@ fun HomeScreen(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Dashboard content  — consumes a SINGLE StateFlow → one recomposition per update
+//  Dashboard content
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
@@ -179,20 +178,19 @@ private fun DashboardContent(
     categoryVm: CategoryViewModel,
     modifier:   Modifier = Modifier
 ) {
-    // ── Single state collection — replaces 3 separate collectAsState calls ───
-    val uiState        by vm.dashboardUiState.collectAsState()
-    val editingExpense  = remember { mutableStateOf<Expense?>(null) }
-    // searchText kept in rememberSaveable so it survives config changes
-    val searchText      = rememberSaveable { mutableStateOf("") }
-    // tracks which category cards are expanded (collapsed by default)
+    val uiState           by vm.dashboardUiState.collectAsState()
+    val activeTypeFilter  by vm.typeFilter.collectAsState()
+    val editingExpense     = remember { mutableStateOf<Expense?>(null) }
+    val searchText         = rememberSaveable { mutableStateOf("") }
     var expandedCategories by remember { mutableStateOf(emptySet<String>()) }
 
     AnimatedContent(
-        targetState  = uiState,
+        targetState    = uiState,
         transitionSpec = { fadeIn() togetherWith fadeOut() },
-        label        = "dashboardState",
-        modifier     = modifier.fillMaxSize()
+        label          = "dashboardState",
+        modifier       = modifier.fillMaxSize()
     ) { state ->
+
         when (state) {
             // ── Loading ───────────────────────────────────────────────────────
             is DashboardUiState.Loading -> {
@@ -218,6 +216,15 @@ private fun DashboardContent(
                             onSelect      = { vm.selectMonth(it) }
                         )
                     }
+                    item(key = "summaryCard") {
+                        FinancialSummaryCard(
+                            totalIncome    = state.totalIncome,
+                            totalExpenses  = state.totalExpenses,
+                            totalTransfers = state.totalTransfers,
+                            balance        = state.balance,
+                            period         = monthLabel(state.selectedMonth)
+                        )
+                    }
                     item(key = "search") {
                         InputField(
                             value         = searchText.value,
@@ -225,7 +232,14 @@ private fun DashboardContent(
                             label         = "Search transactions"
                         )
                     }
+                    item(key = "typeFilter") {
+                        TypeFilterRow(
+                            active   = activeTypeFilter,
+                            onSelect = { vm.setTypeFilter(it) }
+                        )
+                    }
                     item(key = "empty") { EmptyExpenseState() }
+                    item(key = "bottom_space") { Spacer(Modifier.height(16.dp)) }
                 }
             }
 
@@ -244,6 +258,16 @@ private fun DashboardContent(
                         )
                     }
 
+                    item(key = "summaryCard") {
+                        FinancialSummaryCard(
+                            totalIncome    = state.totalIncome,
+                            totalExpenses  = state.totalExpenses,
+                            totalTransfers = state.totalTransfers,
+                            balance        = state.balance,
+                            period         = monthLabel(state.selectedMonth)
+                        )
+                    }
+
                     item(key = "search") {
                         InputField(
                             value         = searchText.value,
@@ -252,19 +276,21 @@ private fun DashboardContent(
                         )
                     }
 
-                    item(key = "totalCard") {
-                        TotalExpenseCard(
-                            total  = state.grandTotal,
-                            count  = state.filteredExpenses.size,
-                            period = monthLabel(state.selectedMonth)
+                    item(key = "typeFilter") {
+                        TypeFilterRow(
+                            active   = activeTypeFilter,
+                            onSelect = { vm.setTypeFilter(it) }
                         )
                     }
 
-                    if (state.categoryEntries.isNotEmpty()) {
+                    // ── Expense category breakdown (only when showing Expenses or All) ──
+                    val showCategoryBreakdown = activeTypeFilter == null ||
+                                               activeTypeFilter == TransactionType.EXPENSE
+                    if (showCategoryBreakdown && state.categoryEntries.isNotEmpty()) {
                         item(key = "catHeader") {
                             SectionHeader(
                                 title    = "By Category · ${monthLabel(state.selectedMonth)}",
-                                modifier = Modifier.padding(top = 6.dp)
+                                modifier = Modifier.padding(top = 4.dp)
                             )
                         }
                         itemsIndexed(
@@ -293,7 +319,35 @@ private fun DashboardContent(
                         }
                     }
 
-                    item(key = "bottom_space") { Spacer(Modifier.height(16.dp)) }
+                    // ── Unified transaction list ───────────────────────────────
+                    // Shown for Income, Transfer, or when category breakdown is off
+                    val showTransactionList = activeTypeFilter != null &&
+                                             activeTypeFilter != TransactionType.EXPENSE
+                    if (showTransactionList && state.filteredExpenses.isNotEmpty()) {
+                        item(key = "txHeader") {
+                            SectionHeader(
+                                title = when (activeTypeFilter) {
+                                    TransactionType.INCOME   -> "Income · ${monthLabel(state.selectedMonth)}"
+                                    TransactionType.TRANSFER -> "Transfers · ${monthLabel(state.selectedMonth)}"
+                                    else                     -> "Transactions · ${monthLabel(state.selectedMonth)}"
+                                },
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                        itemsIndexed(
+                            items = state.filteredExpenses,
+                            key   = { _, e -> "tx_${e.id}" }
+                        ) { _, expense ->
+                            TransactionRow(
+                                expense  = expense,
+                                onEdit   = { editingExpense.value = it },
+                                onDelete = { vm.deleteExpense(it) },
+                                modifier = Modifier.animateItem()
+                            )
+                        }
+                    }
+
+                    item(key = "bottom_space") { Spacer(Modifier.height(80.dp)) }
                 }
             }
         }
@@ -305,13 +359,12 @@ private fun DashboardContent(
             onDismissRequest = { editingExpense.value = null },
             properties = DialogProperties(
                 usePlatformDefaultWidth = false,
-                decorFitsSystemWindows  = true   // allow dialog to react to IME insets
+                decorFitsSystemWindows  = true
             )
         ) {
-            // Box with maxWidth ensures button is visible in dialog
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(0.95f)  // 95% of screen width
+                    .fillMaxWidth(0.95f)
                     .heightIn(max = WindowInsets.systemBars.getBottom(LocalDensity.current).dp + 600.dp)
             ) {
                 AddExpenseScreen(
@@ -320,11 +373,16 @@ private fun DashboardContent(
                     categoryVm       = categoryVm,
                     onDismiss        = { editingExpense.value = null },
                     onConfirm        = { title, amount, category, subCategory,
-                                         categoryId, subCategoryId, timestamp ->
+                                         categoryId, subCategoryId, timestamp, type ->
                         vm.updateExpense(expense.copy(
-                            title = title, amount = amount, category = category,
-                            subCategory = subCategory, categoryId = categoryId,
-                            subCategoryId = subCategoryId, timestamp = timestamp
+                            title         = title,
+                            amount        = amount,
+                            category      = category,
+                            subCategory   = subCategory,
+                            categoryId    = categoryId,
+                            subCategoryId = subCategoryId,
+                            timestamp     = timestamp,
+                            type          = type
                         ))
                         vm.selectMonth(
                             SimpleDateFormat("yyyy-MM", Locale.US).format(Date(timestamp))
@@ -338,7 +396,61 @@ private fun DashboardContent(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Stateless month-filter row  — only recomposes when months/selectedMonth change
+//  Type filter chips  — All / Income / Expense / Transfer
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun TypeFilterRow(
+    active:   TransactionType?,
+    onSelect: (TransactionType?) -> Unit
+) {
+    // Chip accent colors per type
+    val incomeColor   = Color(0xFF34D399)
+    val expenseColor  = Color(0xFFF87171)
+    val transferColor = Color(0xFFFB923C)
+
+    Row(
+        modifier              = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment     = Alignment.CenterVertically
+    ) {
+        // "All" chip
+        TypeChip(
+            label    = "All",
+            selected = active == null,
+            color    = MaterialTheme.colorScheme.primary,
+            onClick  = { onSelect(null) }
+        )
+        TypeChip(label = "Income",   selected = active == TransactionType.INCOME,
+            color = incomeColor,   onClick = { onSelect(TransactionType.INCOME) })
+        TypeChip(label = "Expenses", selected = active == TransactionType.EXPENSE,
+            color = expenseColor,  onClick = { onSelect(TransactionType.EXPENSE) })
+        TypeChip(label = "Transfers", selected = active == TransactionType.TRANSFER,
+            color = transferColor, onClick = { onSelect(TransactionType.TRANSFER) })
+    }
+}
+
+@Composable
+private fun TypeChip(
+    label:    String,
+    selected: Boolean,
+    color:    Color,
+    onClick:  () -> Unit
+) {
+    FilterChip(
+        selected = selected,
+        onClick  = onClick,
+        label    = { Text(label, style = MaterialTheme.typography.labelMedium, fontSize = 12.sp) },
+        colors   = FilterChipDefaults.filterChipColors(
+            selectedContainerColor    = color.copy(alpha = 0.20f),
+            selectedLabelColor        = color,
+            selectedLeadingIconColor  = color
+        )
+    )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Month filter row
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable

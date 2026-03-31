@@ -12,4 +12,6 @@ data class Expense(
     val categoryId: Long = 0,
     val subCategoryId: Long? = null,
     val timestamp: Long,
+    /** Defaults to EXPENSE so old serialized backups (missing this field) are safely restored. */
+    val type: TransactionType = TransactionType.EXPENSE,
 )

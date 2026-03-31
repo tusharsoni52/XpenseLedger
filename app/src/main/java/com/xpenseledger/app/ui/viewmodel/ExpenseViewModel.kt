@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.xpenseledger.app.domain.model.Expense
+import com.xpenseledger.app.domain.model.TransactionType
 import com.xpenseledger.app.domain.repository.ExpenseRepository
 import com.xpenseledger.app.domain.usecase.ExportExpensesUseCase
 import com.xpenseledger.app.domain.usecase.ImportExpensesUseCase
@@ -44,10 +45,15 @@ sealed class BackupResult {
 sealed class DashboardUiState {
     /** DB not yet ready */
     object Loading : DashboardUiState()
-    /** DB ready but no expenses match the current filter */
+    /** DB ready but no transactions match the current filter */
     data class Empty(
-        val selectedMonth:  String,
-        val availableMonths: List<String>
+        val selectedMonth:    String,
+        val availableMonths:  List<String>,
+        val transfersForMonth: List<Expense> = emptyList(),
+        val totalIncome:      Double = 0.0,
+        val totalExpenses:    Double = 0.0,
+        val totalTransfers:   Double = 0.0,
+        val balance:          Double = 0.0
     ) : DashboardUiState()
     /** Normal data */
     data class Success(
@@ -55,9 +61,15 @@ sealed class DashboardUiState {
         val availableMonths:  List<String>,
         val filteredExpenses: List<Expense>,
         val categoryEntries:  List<Pair<String, Double>>,
-        val categoryExpenses: Map<String, List<Expense>>,   // expenses per category
+        val categoryExpenses: Map<String, List<Expense>>,
         val grandTotal:       Double,
-        val searchQuery:      String
+        val searchQuery:      String,
+        val transfersForMonth: List<Expense> = emptyList(),
+        // ── Financial summary (for the selected month) ──────────────────────
+        val totalIncome:      Double = 0.0,
+        val totalExpenses:    Double = 0.0,
+        val totalTransfers:   Double = 0.0,
+        val balance:          Double = 0.0
     ) : DashboardUiState()
 }
 
@@ -75,66 +87,93 @@ class ExpenseViewModel @Inject constructor(
     // ── Private mutable state ─────────────────────────────────────────────────
 
     private val _query          = MutableStateFlow("")
-    private val _selectedMonth = MutableStateFlow<String?>(Companion.currentMonthKey())
+    private val _selectedMonth  = MutableStateFlow<String?>(Companion.currentMonthKey())
     private val _editingExpense = MutableStateFlow<Expense?>(null)
+    /** null = show all types; set to a specific type to filter */
+    private val _typeFilter     = MutableStateFlow<TransactionType?>(null)
 
     // ── Public read-only flows ────────────────────────────────────────────────
-    
-    /** The expense currently being edited (null if adding new) */
+
     val editingExpense: StateFlow<Expense?> = _editingExpense.asStateFlow()
+    val selectedMonth:  StateFlow<String?>  = _selectedMonth.asStateFlow()
+    val typeFilter:     StateFlow<TransactionType?> = _typeFilter.asStateFlow()
 
-    /** The currently selected month key ("yyyy-MM"). Never null. */
-    val selectedMonth: StateFlow<String?> = _selectedMonth.asStateFlow()
-
-    /** Raw all-expenses list (used by ComparisonScreen / analytics). */
+    /** Raw all-transactions list (used by full history, export, and edit). */
     val expenses: StateFlow<List<Expense>> = repo.getAll()
-        .distinctUntilChanged()  // Don't re-emit if list hasn't actually changed
+        .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
 
     // ── Derived flows ─────────────────────────────────────────────────────────
 
     /** Single combined state consumed by the Dashboard — one recomposition per change. */
     val dashboardUiState: StateFlow<DashboardUiState> = combine(
-        expenses, _query, _selectedMonth
-    ) { list, query, month ->
-        // Still loading — the initial emptyList hasn't been replaced by real data yet
-        // We detect "loading" by checking whether the repo has emitted at least once;
-        // the simplest proxy: treat a completely empty list while the query is blank as Loading
-        // only on first emission (handled below via distinctUntilChanged + WhileSubscribed).
+        expenses, _query, _selectedMonth, _typeFilter
+    ) { arr ->
+        @Suppress("UNCHECKED_CAST")
+        val list       = arr[0] as List<Expense>
+        val query      = arr[1] as String
+        val month      = arr[2] as String?
+        val typeFilter = arr[3] as TransactionType?
 
-        val filtered = list.filter { e ->
-            (month == null || monthKey(e) == month) &&
+        // ── All transactions in the selected month (for summary totals) ──────
+        val monthList = list.filter { e ->
+            month == null || monthKey(e) == month
+        }
+
+        // ── Financial summary (Balance = Income − Expense − Transfer) ────────
+        val totalIncome    = monthList.filter { it.type == TransactionType.INCOME   }.sumOf { it.amount }
+        val totalExpenses  = monthList.filter { it.type == TransactionType.EXPENSE  }.sumOf { it.amount }
+        val totalTransfers = monthList.filter { it.type == TransactionType.TRANSFER }.sumOf { it.amount }
+        val balance        = totalIncome - totalExpenses - totalTransfers
+
+        // ── Type-filtered list for the transaction list ───────────────────────
+        val filtered = monthList.filter { e ->
+            (typeFilter == null || e.type == typeFilter) &&
             (query.isBlank() || e.title.contains(query, ignoreCase = true))
         }
 
-        val categoryGroups = filtered.groupBy { it.category }
+        // ── Transfers for the dedicated transfers section ─────────────────────
+        val transfersForMonth = monthList
+            .filter { it.type == TransactionType.TRANSFER }
+            .filter { query.isBlank() || it.title.contains(query, ignoreCase = true) }
+            .sortedByDescending { it.timestamp }
 
+        // ── Category breakdown — only EXPENSE rows ────────────────────────────
+        val expenseOnly    = filtered.filter { it.type == TransactionType.EXPENSE }
+        val categoryGroups = expenseOnly.groupBy { it.category }
         val categoryEntries = categoryGroups.entries
             .map { it.key to it.value.sumOf { e -> e.amount } }
             .sortedByDescending { it.second }
-
-        // Keep the same order as categoryEntries so the UI is consistent
         val categoryExpenses: Map<String, List<Expense>> = categoryEntries
             .associate { (cat, _) ->
                 cat to (categoryGroups[cat]?.sortedByDescending { it.timestamp } ?: emptyList())
             }
-
         val grandTotal = categoryEntries.sumOf { it.second }
 
-        if (filtered.isEmpty()) {
+        if (filtered.isEmpty() && monthList.isEmpty()) {
             DashboardUiState.Empty(
-                selectedMonth   = month ?: "All Months",
-                availableMonths = availableMonths()   // always show full 12-month window
+                selectedMonth     = month ?: "All Months",
+                availableMonths   = availableMonths(),
+                transfersForMonth = transfersForMonth,
+                totalIncome       = totalIncome,
+                totalExpenses     = totalExpenses,
+                totalTransfers    = totalTransfers,
+                balance           = balance
             )
         } else {
             DashboardUiState.Success(
-                selectedMonth    = month ?: "All Months",
-                availableMonths  = availableMonths(),
-                filteredExpenses = filtered,
-                categoryEntries  = categoryEntries,
-                categoryExpenses = categoryExpenses,
-                grandTotal       = grandTotal,
-                searchQuery      = query
+                selectedMonth     = month ?: "All Months",
+                availableMonths   = availableMonths(),
+                filteredExpenses  = filtered,
+                categoryEntries   = categoryEntries,
+                categoryExpenses  = categoryExpenses,
+                grandTotal        = grandTotal,
+                searchQuery       = query,
+                transfersForMonth = transfersForMonth,
+                totalIncome       = totalIncome,
+                totalExpenses     = totalExpenses,
+                totalTransfers    = totalTransfers,
+                balance           = balance
             )
         }
     }.stateIn(
@@ -143,32 +182,45 @@ class ExpenseViewModel @Inject constructor(
         DashboardUiState.Loading
     )
 
-    /** Monthly totals for analytics bar chart */
+    /** Monthly EXPENSE totals for analytics bar chart. */
     val monthlySummary: StateFlow<Map<String, Double>> = expenses
         .map { list ->
-            list.groupBy { monthKey(it) }
+            list.filter { it.type == TransactionType.EXPENSE }
+                .groupBy { monthKey(it) }
                 .mapValues { (_, v) -> v.sumOf { it.amount } }
                 .entries.sortedBy { it.key }
                 .associate { it.key to it.value }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyMap())
 
+    /** Per-month INCOME totals for analytics. */
+    val monthlyIncomeSummary: StateFlow<Map<String, Double>> = expenses
+        .map { list ->
+            list.filter { it.type == TransactionType.INCOME }
+                .groupBy { monthKey(it) }
+                .mapValues { (_, v) -> v.sumOf { it.amount } }
+                .entries.sortedBy { it.key }
+                .associate { it.key to it.value }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyMap())
 
-    /** Category totals for the selected month — used by ComparisonScreen */
+    /** Category totals for the selected month — EXPENSE only. */
     val categorySummary: StateFlow<Map<String, Double>> = combine(
         expenses, _selectedMonth
     ) { list, month ->
-        list.filter { month == null || monthKey(it) == month }
+        list.filter { it.type == TransactionType.EXPENSE }
+            .filter { month == null || monthKey(it) == month }
             .groupBy { it.category }
             .mapValues { (_, v) -> v.sumOf { it.amount } }
             .entries.sortedByDescending { it.value }
             .associate { it.key to it.value }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyMap())
 
-    /** Per-month totals with category breakdown — used for comparison chart */
+    /** Per-month expense totals with category breakdown — EXPENSE only. */
     val monthComparison: StateFlow<List<MonthData>> = expenses
         .map { list ->
-            list.groupBy { monthKey(it) }
+            list.filter { it.type == TransactionType.EXPENSE }
+                .groupBy { monthKey(it) }
                 .entries.sortedBy { it.key }
                 .map { (month, items) ->
                     MonthData(
@@ -186,31 +238,39 @@ class ExpenseViewModel @Inject constructor(
     // ── Public commands ───────────────────────────────────────────────────────
 
     fun selectMonth(month: String?) { _selectedMonth.value = month }
-
     fun setQuery(value: String) { _query.update { value } }
-
+    fun setTypeFilter(type: TransactionType?) { _typeFilter.value = type }
 
     fun addExpense(
-        title: String, amount: Double, category: String,
-        subCategory: String? = null, categoryId: Long = 0, subCategoryId: Long? = null,
-        timestamp: Long = System.currentTimeMillis()
+        title: String,
+        amount: Double,
+        category: String,
+        subCategory: String? = null,
+        categoryId: Long = 0,
+        subCategoryId: Long? = null,
+        timestamp: Long = System.currentTimeMillis(),
+        type: TransactionType = TransactionType.EXPENSE   // new parameter, safe default
     ) {
         viewModelScope.launch {
             repo.insert(
                 Expense(
-                    title = title, amount = amount, category = category,
-                    subCategory = subCategory, categoryId = categoryId,
-                    subCategoryId = subCategoryId, timestamp = timestamp
+                    title         = title,
+                    amount        = amount,
+                    category      = category,
+                    subCategory   = subCategory,
+                    categoryId    = categoryId,
+                    subCategoryId = subCategoryId,
+                    timestamp     = timestamp,
+                    type          = type
                 )
             )
         }
     }
 
-
     fun updateExpense(expense: Expense) {
-        viewModelScope.launch { 
+        viewModelScope.launch {
             repo.update(expense)
-            _editingExpense.value = null  // Clear editing state after update
+            _editingExpense.value = null
         }
     }
 
@@ -283,3 +343,11 @@ data class MonthData(
     val total:      Double,
     val byCategory: Map<String, Double>
 )
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Extension helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+fun Expense.isExpense()  = type == TransactionType.EXPENSE
+fun Expense.isTransfer() = type == TransactionType.TRANSFER
+fun Expense.isIncome()   = type == TransactionType.INCOME

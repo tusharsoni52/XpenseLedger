@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.xpenseledger.app.domain.model.Category
+import com.xpenseledger.app.domain.model.TransactionType
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Constants
@@ -68,19 +69,21 @@ data class FieldError(val message: String)
  */
 @Stable
 class AddExpenseFormState(
-    initialTitle:    String   = "",
-    initialAmount:   String   = "",
-    initialMain:     Category? = null,
-    initialSub:      Category? = null,
-    initialTimestamp: Long    = System.currentTimeMillis()
+    initialTitle:           String            = "",
+    initialAmount:          String            = "",
+    initialMain:            Category?         = null,
+    initialSub:             Category?         = null,
+    initialTimestamp:       Long              = System.currentTimeMillis(),
+    initialTransactionType: TransactionType   = TransactionType.EXPENSE
 ) {
     // ── Raw field values ──────────────────────────────────────────────────────
 
-    var title     by mutableStateOf(initialTitle)
-    var amount    by mutableStateOf(initialAmount)
-    var mainCat   by mutableStateOf<Category?>(initialMain)
-    var subCat    by mutableStateOf<Category?>(initialSub)
-    var timestamp by mutableStateOf(initialTimestamp)
+    var title           by mutableStateOf(initialTitle)
+    var amount          by mutableStateOf(initialAmount)
+    var mainCat         by mutableStateOf<Category?>(initialMain)
+    var subCat          by mutableStateOf<Category?>(initialSub)
+    var timestamp       by mutableStateOf(initialTimestamp)
+    var transactionType by mutableStateOf(initialTransactionType)
 
     /** True while the form is being submitted — disables the confirm button. */
     var submitting by mutableStateOf(false)

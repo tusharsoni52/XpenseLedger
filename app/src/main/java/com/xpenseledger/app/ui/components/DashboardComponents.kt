@@ -190,7 +190,291 @@ fun TotalExpenseCard(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  2. CATEGORY BREAKDOWN CARD  ── one row per category with animated bar
+//  2. FINANCIAL SUMMARY CARD  ── Income / Expenses / Transfers / Balance
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Four-metric summary card showing Income (green), Expenses (red),
+ * Transfers (orange) and the computed Balance (highlighted).
+ *
+ * Balance = Income − Expenses − Transfers
+ * Balance is green when positive, red when negative, grey when zero.
+ */
+@Composable
+fun FinancialSummaryCard(
+    totalIncome:    Double,
+    totalExpenses:  Double,
+    totalTransfers: Double,
+    balance:        Double,
+    period:         String,
+    masked:         Boolean  = false,
+    modifier:       Modifier = Modifier
+) {
+    val incomeAnim    = remember { Animatable(0f) }
+    val expenseAnim   = remember { Animatable(0f) }
+    val transferAnim  = remember { Animatable(0f) }
+    val balanceAnim   = remember { Animatable(0f) }
+
+    LaunchedEffect(totalIncome)    { incomeAnim.animateTo(totalIncome.toFloat(),    tween(800, easing = FastOutSlowInEasing)) }
+    LaunchedEffect(totalExpenses)  { expenseAnim.animateTo(totalExpenses.toFloat(), tween(800, easing = FastOutSlowInEasing)) }
+    LaunchedEffect(totalTransfers) { transferAnim.animateTo(totalTransfers.toFloat(), tween(800, easing = FastOutSlowInEasing)) }
+    LaunchedEffect(balance)        { balanceAnim.animateTo(balance.toFloat(),       tween(900, easing = FastOutSlowInEasing)) }
+
+    val balanceColor = when {
+        balance > 0 -> Color(0xFF34D399)   // emerald green
+        balance < 0 -> Color(0xFFF87171)   // soft red
+        else        -> Color(0xFF94A3B8)   // slate
+    }
+
+    Card(
+        modifier  = modifier.fillMaxWidth(),
+        shape     = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .neumorphicShadow(elevation = 10.dp, cornerRadius = 24.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(Color(0xFF1E293B), Color(0xFF0F172A)),
+                        start  = Offset(0f, 0f),
+                        end    = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+                    )
+                )
+                .padding(horizontal = 20.dp, vertical = 18.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                // ── Header ─────────────────────────────────────────────────────
+                Text(
+                    text          = period.uppercase(Locale.getDefault()),
+                    style         = MaterialTheme.typography.labelSmall,
+                    color         = Color.White.copy(alpha = 0.5f),
+                    letterSpacing = 1.2.sp
+                )
+
+                // ── Balance (hero figure) ──────────────────────────────────────
+                Row(
+                    modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment     = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text  = "Balance",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color.White.copy(alpha = 0.6f)
+                        )
+                        Text(
+                            text       = if (masked) maskedAmount(balance, true)
+                                         else "${if (balance >= 0) "+" else ""}₹${"%.2f".format(balanceAnim.value)}",
+                            style      = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color      = balanceColor
+                        )
+                    }
+                    // Balance formula hint
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color.White.copy(alpha = 0.06f))
+                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                    ) {
+                        Text(
+                            text  = "Income − Expenses − Transfers",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.45f)
+                        )
+                    }
+                }
+
+                HorizontalDivider(color = Color.White.copy(alpha = 0.08f), thickness = 0.5.dp)
+
+                // ── Three metric tiles ─────────────────────────────────────────
+                Row(
+                    modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    SummaryTile(
+                        label    = "Income",
+                        value    = if (masked) maskedAmount(totalIncome, true) else "₹${"%.0f".format(incomeAnim.value)}",
+                        color    = Color(0xFF34D399),
+                        prefix   = "+",
+                        modifier = Modifier.weight(1f)
+                    )
+                    SummaryTile(
+                        label    = "Expenses",
+                        value    = if (masked) maskedAmount(totalExpenses, true) else "₹${"%.0f".format(expenseAnim.value)}",
+                        color    = Color(0xFFF87171),
+                        prefix   = "-",
+                        modifier = Modifier.weight(1f)
+                    )
+                    SummaryTile(
+                        label    = "Transfers",
+                        value    = if (masked) maskedAmount(totalTransfers, true) else "₹${"%.0f".format(transferAnim.value)}",
+                        color    = Color(0xFFFB923C),
+                        prefix   = "→",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SummaryTile(
+    label:    String,
+    value:    String,
+    color:    Color,
+    prefix:   String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(color.copy(alpha = 0.10f))
+            .padding(horizontal = 10.dp, vertical = 10.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(prefix, style = MaterialTheme.typography.labelMedium, color = color,
+                    fontWeight = FontWeight.Bold)
+                Text(label,  style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.55f))
+            }
+            Text(
+                text       = value,
+                style      = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color      = color,
+                maxLines   = 1,
+                overflow   = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  3. TRANSACTION ROW with type indicator  ── Income/Expense/Transfer
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Single transaction row that adapts its color and prefix symbol
+ * to the transaction type:
+ *  • INCOME   →  "+" green
+ *  • EXPENSE  →  "−" red
+ *  • TRANSFER →  "→" orange
+ */
+@Composable
+fun TransactionRow(
+    expense:  Expense,
+    onEdit:   (Expense) -> Unit,
+    onDelete: (Expense) -> Unit,
+    masked:   Boolean  = false,
+    modifier: Modifier = Modifier
+) {
+    val (typeColor, typePrefix) = when (expense.type) {
+        com.xpenseledger.app.domain.model.TransactionType.INCOME   -> Color(0xFF34D399) to "+"
+        com.xpenseledger.app.domain.model.TransactionType.TRANSFER -> Color(0xFFFB923C) to "→"
+        else                                                        -> Color(0xFFF87171) to "−"
+    }
+    val badgeColor = categoryBadgeColor(expense.category)
+    val dateFmt    = remember { SimpleDateFormat("dd MMM", Locale.getDefault()) }
+    val safeEdit   = rememberDebouncedClick { onEdit(expense) }
+    val safeDelete = rememberDebouncedClick { onDelete(expense) }
+
+    Card(
+        modifier  = modifier.fillMaxWidth(),
+        shape     = RoundedCornerShape(16.dp),
+        colors    = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .neumorphicShadow(elevation = 4.dp, cornerRadius = 16.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Row(
+                modifier              = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment     = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Type prefix badge
+                Box(
+                    modifier         = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(typeColor.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text       = typePrefix,
+                        style      = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color      = typeColor
+                    )
+                }
+
+                // Title + meta
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text       = expense.title,
+                        style      = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines   = 1,
+                        overflow   = TextOverflow.Ellipsis,
+                        color      = MaterialTheme.colorScheme.onSurface
+                    )
+                    val sub     = expense.subCategory
+                    val dateStr = dateFmt.format(Date(expense.timestamp))
+                    Text(
+                        text  = buildString {
+                            append(expense.category)
+                            if (!sub.isNullOrBlank()) append(" › $sub")
+                            append("  •  $dateStr")
+                        },
+                        style   = MaterialTheme.typography.labelSmall,
+                        color   = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                // Amount + actions
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text       = "${typePrefix}₹${"%.2f".format(expense.amount)}",
+                        style      = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color      = typeColor
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy((-8).dp)) {
+                        IconButton(onClick = safeEdit,   modifier = Modifier.size(28.dp)) {
+                            Icon(Icons.Default.Edit,   contentDescription = "Edit",
+                                tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+                        }
+                        IconButton(onClick = safeDelete, modifier = Modifier.size(28.dp)) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete",
+                                tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(14.dp))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  CATEGORY BREAKDOWN CARD  ── one row per category with animated bar
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**

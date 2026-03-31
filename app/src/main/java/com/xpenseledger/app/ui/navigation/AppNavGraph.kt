@@ -127,19 +127,30 @@ fun AppNavGraph(
                         navController.popBackStack() 
                     },
                     onConfirm    = { title, amount, category, subCategory,
-                                     categoryId, subCategoryId, timestamp ->
+                                     categoryId, subCategoryId, timestamp, type ->
                         if (currentEditingExpense != null) {
-                            // Update existing expense
+                            // Update existing expense — preserve type
                             expenseVm.updateExpense(currentEditingExpense.copy(
-                                title = title, amount = amount, category = category,
-                                subCategory = subCategory, categoryId = categoryId,
-                                subCategoryId = subCategoryId, timestamp = timestamp
+                                title         = title,
+                                amount        = amount,
+                                category      = category,
+                                subCategory   = subCategory,
+                                categoryId    = categoryId,
+                                subCategoryId = subCategoryId,
+                                timestamp     = timestamp,
+                                type          = type
                             ))
                         } else {
-                            // Add new expense
+                            // Add new expense — pass type through
                             expenseVm.addExpense(
-                                title, amount, category,
-                                subCategory, categoryId, subCategoryId, timestamp
+                                title         = title,
+                                amount        = amount,
+                                category      = category,
+                                subCategory   = subCategory,
+                                categoryId    = categoryId,
+                                subCategoryId = subCategoryId,
+                                timestamp     = timestamp,
+                                type          = type
                             )
                         }
                         expenseVm.selectMonth(

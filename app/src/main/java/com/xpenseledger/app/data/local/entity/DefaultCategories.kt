@@ -62,6 +62,7 @@ object DefaultCategories {
         CategoryEntity(53, "Insurance",             "SUB", 7),  // Moved from Health to Finance
         CategoryEntity(76, "Vehicle Insurance",     "SUB", 7),  // NEW
         CategoryEntity(77, "Bank Charges",          "SUB", 7),  // NEW
+        CategoryEntity(78, "Family Support",        "SUB", 7),  // Transfer-aware subcategory
 
         // ── Household ─────────────────────────────────────────
         CategoryEntity(90, "Maid Salary",       "SUB", 9),
@@ -79,5 +80,13 @@ object DefaultCategories {
         CategoryEntity(80, "Gifts",        "SUB", 8),
         CategoryEntity(81, "Donations",    "SUB", 8),
         CategoryEntity(82, "Miscellaneous","SUB", 8),
+
+        // ── Income ────────────────────────────────────────────
+        CategoryEntity(300, "Income",      "MAIN", null, "💵"),
+        CategoryEntity(301, "Salary",      "SUB",  300,  ""),
+        CategoryEntity(302, "Bonus",       "SUB",  300,  ""),
+        CategoryEntity(303, "Freelance",   "SUB",  300,  ""),
+        CategoryEntity(304, "Interest",    "SUB",  300,  ""),
+        CategoryEntity(305, "Other Income","SUB",  300,  ""),
     )
 }

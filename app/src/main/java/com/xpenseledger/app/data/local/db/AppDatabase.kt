@@ -9,7 +9,7 @@ import com.xpenseledger.app.data.local.dao.ExpenseDao
 import com.xpenseledger.app.data.local.entity.CategoryEntity
 import com.xpenseledger.app.data.local.entity.ExpenseEntity
 
-@Database(entities = [ExpenseEntity::class, CategoryEntity::class], version = 6)
+@Database(entities = [ExpenseEntity::class, CategoryEntity::class], version = 8)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
     abstract fun categoryDao(): CategoryDao
@@ -191,6 +191,40 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (80, 'Gifts', 'SUB', 8, '')")
                 db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (81, 'Donations', 'SUB', 8, '')")
                 db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (82, 'Miscellaneous', 'SUB', 8, '')")
+            }
+        }
+
+        /**
+         * v6 → v7 : Adds TransactionType support + Family Support sub-category
+         *
+         * Changes:
+         *  1. Add `type` column to `expenses` (TEXT NOT NULL DEFAULT 'EXPENSE')
+         *     — all existing rows are automatically set to EXPENSE (no data loss)
+         *  2. Insert "Family Support" sub-category under Finance (id=7)
+         *
+         * NOTE: Keyword-based auto-tagging is intentionally skipped to avoid
+         *       unexpected changes to existing users' expense totals.
+         */
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `expenses` ADD COLUMN `type` TEXT NOT NULL DEFAULT 'EXPENSE'")
+                db.execSQL(
+                    "INSERT OR IGNORE INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) " +
+                    "VALUES (78, 'Family Support', 'SUB', 7, '👨\u200D👩\u200D👧')"
+                )
+            }
+        }
+
+        /** v7 → v8 : Adds Income main category and subcategories. */
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                val ins = "INSERT OR IGNORE INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES"
+                db.execSQL("$ins (300, 'Income',       'MAIN', NULL, '💵')")
+                db.execSQL("$ins (301, 'Salary',       'SUB',  300,  '')")
+                db.execSQL("$ins (302, 'Bonus',        'SUB',  300,  '')")
+                db.execSQL("$ins (303, 'Freelance',    'SUB',  300,  '')")
+                db.execSQL("$ins (304, 'Interest',     'SUB',  300,  '')")
+                db.execSQL("$ins (305, 'Other Income', 'SUB',  300,  '')")
             }
         }
     }

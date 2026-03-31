@@ -1,5 +1,6 @@
 package com.xpenseledger.app.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -12,5 +13,8 @@ data class ExpenseEntity(
     val subCategory: String? = null,
     val categoryId: Long = 0,
     val subCategoryId: Long? = null,
-    val timestamp: Long
+    val timestamp: Long,
+    /** Stored as enum name string; DEFAULT 'EXPENSE' set via MIGRATION_6_7. */
+    @ColumnInfo(name = "type", defaultValue = "EXPENSE")
+    val type: String = "EXPENSE"
 )
