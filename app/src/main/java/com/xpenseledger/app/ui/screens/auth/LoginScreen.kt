@@ -128,8 +128,11 @@ fun LoginScreen(
         label = "rScale"
     )
 
-    // ── Events ────────────────────────────────────────────────────────────────
+    // ── Init & reinit when returning after logout ──────────────────────────────
+    // ── Collect one-shot auth events ──────────────────────────────────────────
     LaunchedEffect(Unit) {
+        vm.reinitializeMode()
+        
         vm.events.collect { event ->
             when (event) {
                 is AuthEvent.Success    -> { dotState = PinDotState.SUCCESS; onAuthenticated() }
@@ -144,7 +147,8 @@ fun LoginScreen(
         }
     }
 
-    LaunchedEffect(mode) {
+    // ── Biometric auth trigger (only when in UNLOCK mode) ──────────────────────
+    LaunchedEffect(mode, canUseBiometrics, biometricAuthManager) {
         if (mode == AuthMode.UNLOCK && canUseBiometrics && biometricAuthManager != null)
             biometricAuthManager.authenticate { success -> if (success) vm.onBiometricSuccess() }
     }
@@ -563,7 +567,7 @@ private fun GlassLockIcon(
         ) {
             Icon(
                 imageVector        = Icons.Default.Lock,
-                contentDescription = "Secure",
+                contentDescription = "login_lock_icon",
                 tint               = CyanAccent,
                 modifier           = Modifier.size(30.dp)
             )

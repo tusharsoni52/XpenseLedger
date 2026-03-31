@@ -48,6 +48,7 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -403,9 +404,9 @@ private fun TitleField(form: AddExpenseFormState) {
             .semantics { contentDescription = "Expense title" },
         shape         = RoundedCornerShape(14.dp),
         keyboardOptions = KeyboardOptions(
-            capitalization = KeyboardCapitalization.Sentences,
-            imeAction      = ImeAction.Next,
-            autoCorrect    = false          // prevent keyboard from logging/suggesting titles
+            capitalization   = KeyboardCapitalization.Sentences,
+            imeAction        = ImeAction.Next,
+            autoCorrectEnabled = false      // prevent keyboard from logging/suggesting titles
         ),
         keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
         supportingText = {
@@ -431,7 +432,7 @@ private fun TitleField(form: AddExpenseFormState) {
 @Composable
 private fun AmountField(form: AddExpenseFormState) {
     val focusManager    = LocalFocusManager.current
-    val currencyFmt     = remember { NumberFormat.getCurrencyInstance(Locale("en", "IN")) }
+    val currencyFmt     = remember { NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-IN")) }
     val formattedPreview = remember(form.amount) {
         form.amount.toDoubleOrNull()?.takeIf { it > 0 }?.let { currencyFmt.format(it) }
     }
@@ -448,9 +449,9 @@ private fun AmountField(form: AddExpenseFormState) {
             .semantics { contentDescription = "Expense amount" },
         shape         = RoundedCornerShape(14.dp),
         keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Decimal,
-            imeAction    = ImeAction.Done,
-            autoCorrect  = false            // no clipboard/suggestion bar over a financial field
+            keyboardType       = KeyboardType.Decimal,
+            imeAction          = ImeAction.Done,
+            autoCorrectEnabled = false      // no clipboard/suggestion bar over a financial field
         ),
         keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
         prefix        = { Text("₹ ", fontWeight = FontWeight.Medium) },
@@ -615,7 +616,7 @@ private fun StyledDropdown(
             readOnly       = true,
             isError        = isError,
             singleLine     = true,
-            modifier       = Modifier.fillMaxWidth().menuAnchor(),
+            modifier       = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
             shape          = RoundedCornerShape(14.dp),
             trailingIcon   = {
                 Icon(

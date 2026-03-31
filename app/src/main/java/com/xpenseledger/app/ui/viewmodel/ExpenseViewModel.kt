@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -74,7 +75,7 @@ class ExpenseViewModel @Inject constructor(
     // ── Private mutable state ─────────────────────────────────────────────────
 
     private val _query          = MutableStateFlow("")
-    private val _selectedMonth  = MutableStateFlow(currentMonthKey())
+    private val _selectedMonth = MutableStateFlow<String?>(Companion.currentMonthKey())
     private val _editingExpense = MutableStateFlow<Expense?>(null)
 
     // ── Public read-only flows ────────────────────────────────────────────────
@@ -83,10 +84,11 @@ class ExpenseViewModel @Inject constructor(
     val editingExpense: StateFlow<Expense?> = _editingExpense.asStateFlow()
 
     /** The currently selected month key ("yyyy-MM"). Never null. */
-    val selectedMonth: StateFlow<String> = _selectedMonth.asStateFlow()
+    val selectedMonth: StateFlow<String?> = _selectedMonth.asStateFlow()
 
     /** Raw all-expenses list (used by ComparisonScreen / analytics). */
     val expenses: StateFlow<List<Expense>> = repo.getAll()
+        .distinctUntilChanged()  // Don't re-emit if list hasn't actually changed
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
 
     // ── Derived flows ─────────────────────────────────────────────────────────
@@ -101,7 +103,7 @@ class ExpenseViewModel @Inject constructor(
         // only on first emission (handled below via distinctUntilChanged + WhileSubscribed).
 
         val filtered = list.filter { e ->
-            monthKey(e) == month &&
+            (month == null || monthKey(e) == month) &&
             (query.isBlank() || e.title.contains(query, ignoreCase = true))
         }
 
@@ -121,12 +123,12 @@ class ExpenseViewModel @Inject constructor(
 
         if (filtered.isEmpty()) {
             DashboardUiState.Empty(
-                selectedMonth   = month,
-                availableMonths = availableMonths()
+                selectedMonth   = month ?: "All Months",
+                availableMonths = availableMonths()   // always show full 12-month window
             )
         } else {
             DashboardUiState.Success(
-                selectedMonth    = month,
+                selectedMonth    = month ?: "All Months",
                 availableMonths  = availableMonths(),
                 filteredExpenses = filtered,
                 categoryEntries  = categoryEntries,
@@ -137,7 +139,7 @@ class ExpenseViewModel @Inject constructor(
         }
     }.stateIn(
         viewModelScope,
-        SharingStarted.Eagerly,          // keep alive across lock/unlock — no Loading flash on re-entry
+        SharingStarted.Eagerly,
         DashboardUiState.Loading
     )
 
@@ -156,7 +158,7 @@ class ExpenseViewModel @Inject constructor(
     val categorySummary: StateFlow<Map<String, Double>> = combine(
         expenses, _selectedMonth
     ) { list, month ->
-        list.filter { monthKey(it) == month }
+        list.filter { month == null || monthKey(it) == month }
             .groupBy { it.category }
             .mapValues { (_, v) -> v.sumOf { it.amount } }
             .entries.sortedByDescending { it.value }
@@ -183,7 +185,7 @@ class ExpenseViewModel @Inject constructor(
 
     // ── Public commands ───────────────────────────────────────────────────────
 
-    fun selectMonth(month: String) { _selectedMonth.update { month } }
+    fun selectMonth(month: String?) { _selectedMonth.value = month }
 
     fun setQuery(value: String) { _query.update { value } }
 
@@ -250,6 +252,7 @@ class ExpenseViewModel @Inject constructor(
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     fun monthKey(expense: Expense): String = FMT_MONTH.format(Date(expense.timestamp))
+
 
     companion object {
         /** Reused formatter — never recreated per-call */

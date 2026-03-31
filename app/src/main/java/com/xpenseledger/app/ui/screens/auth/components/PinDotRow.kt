@@ -92,11 +92,11 @@ fun PinDotRow(
 @Composable
 private fun PinDot(filled: Boolean, state: PinDotState, index: Int) {
 
-    // Scale: empty stays 1f, filled pops in via spring, success overshoots
+    // Scale: empty stays 1f, filled pops in via spring (0.6 → 1.0), success overshoots
     val scale by animateFloatAsState(
         targetValue = when {
             filled && state == PinDotState.SUCCESS -> 1.40f
-            filled  -> 1.00f
+            filled  -> 1.10f   // slight pop-in so every dot — including the 6th — is clearly seen
             else    -> 1.00f
         },
         animationSpec = spring(

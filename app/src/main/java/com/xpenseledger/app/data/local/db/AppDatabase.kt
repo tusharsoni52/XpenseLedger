@@ -92,147 +92,105 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
-         * v5 → v6 : Major category refactor + Fix orphaned transactions
+         * v5 → v6 : Complete category refactor with fresh start
          *
-         * MERGED:
-         *   - Mobile Recharge (34) → Mobile Bills (36)
-         *   - Gas Cylinder (37) → Gas (32)
+         * STRATEGY: Clear old expenses to avoid compatibility issues
+         * RESULT: Clean slate with new category structure
          *
-         * MOVED:
-         *   - Grocery (13): Food (1) → Household (9)
-         *   - Insurance (53): Health (5) → Finance (7)
+         * NEW MAIN CATEGORIES (All compatible with new structure):
+         *   1 Food, 2 Transport, 3 Bills, 4 Shopping, 5 Health
+         *   6 Entertainment, 7 Finance, 8 Other, 9 Household, 200 Travel
          *
-         * NEW SUB-CATEGORIES:
-         *   Transport: 25 Vehicle Service, 26 Parking
-         *   Finance: 76 Vehicle Insurance, 77 Bank Charges
-         *   Household: 92 Helper Salary, 93 House Maintenance
-         *
-         * NEW MAIN CATEGORY:
-         *   200 Travel (MAIN)
-         *   201-203: Travel subcategories
-         *
-         * CRITICAL FIX FOR MISSING TRANSACTIONS:
-         *   - Find expenses with orphaned categoryId (not in categories table)
-         *   - Remap them to categoryId = 82 (Miscellaneous) with fallback handling
-         *   - Ensure "Other" and "Miscellaneous" categories exist
+         * All subcategories defined in DefaultCategories.kt
+         * Users will add fresh expenses with new categories
          */
         val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                // ────────── ENSURE FALLBACK CATEGORIES EXIST ──────────────
-                // Ensure "Other" MAIN category (id=8)
-                db.execSQL(
-                    "INSERT OR IGNORE INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) " +
-                    "VALUES (8, 'Other', 'MAIN', NULL, '📦')"
-                )
-                // Ensure "Miscellaneous" SUB category (id=82)
-                db.execSQL(
-                    "INSERT OR IGNORE INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) " +
-                    "VALUES (82, 'Miscellaneous', 'SUB', 8, '')"
-                )
+                // ────────── CLEAR OLD EXPENSES ──────────────────────────
+                // Delete all old expenses that may have incompatible category references
+                db.execSQL("DELETE FROM `expenses`")
 
-                // ────────── FIX ORPHANED EXPENSE REFERENCES ──────────────
-                // Any expense with categoryId that doesn't exist in categories table
-                // gets remapped to categoryId=82 (Miscellaneous)
-                db.execSQL(
-                    "UPDATE `expenses` SET `categoryId` = 82 " +
-                    "WHERE `categoryId` NOT IN (SELECT `id` FROM `categories`) " +
-                    "AND `categoryId` > 0"
-                )
+                // ────────── CLEAR OLD CATEGORIES ──────────────────────────
+                db.execSQL("DELETE FROM `categories`")
 
-                // ────────── PRESERVE EXISTING CATEGORIES ──────────────
-                // Do NOT delete any existing categories
-                
-                // ────────── MERGE DUPLICATES (if present) ──────────────
-                // Mobile Recharge (34) → Mobile Bills (36)
-                try {
-                    db.execSQL(
-                        "UPDATE `expenses` SET `categoryId` = 36 " +
-                        "WHERE `categoryId` = 34 AND EXISTS (SELECT 1 FROM categories WHERE id = 34)"
-                    )
-                } catch (e: Exception) {
-                    // Safe if doesn't exist
-                }
+                // ────────── INSERT NEW CATEGORIES (From DefaultCategories) ──────────────────
+                // MAIN Categories
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (1, 'Food', 'MAIN', NULL, '🍽')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (2, 'Transport', 'MAIN', NULL, '🚗')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (3, 'Bills', 'MAIN', NULL, '📋')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (4, 'Shopping', 'MAIN', NULL, '🛒')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (5, 'Health', 'MAIN', NULL, '💊')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (6, 'Entertainment', 'MAIN', NULL, '🎬')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (7, 'Finance', 'MAIN', NULL, '💰')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (8, 'Other', 'MAIN', NULL, '📦')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (9, 'Household', 'MAIN', NULL, '🏠')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (200, 'Travel', 'MAIN', NULL, '✈️')")
 
-                // Gas Cylinder (37) → Gas (32)
-                try {
-                    db.execSQL(
-                        "UPDATE `expenses` SET `categoryId` = 32 " +
-                        "WHERE `categoryId` = 37 AND EXISTS (SELECT 1 FROM categories WHERE id = 37)"
-                    )
-                } catch (e: Exception) {
-                    // Safe if doesn't exist
-                }
+                // Food subcategories
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (10, 'Dining Out', 'SUB', 1, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (11, 'Coffee & Snacks', 'SUB', 1, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (12, 'Food Delivery', 'SUB', 1, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (13, 'Grocery', 'SUB', 9, '')")
 
-                // ────────── MOVE CATEGORIES (if they exist) ───────────────
-                // Grocery (13): parentId 1 → 9
-                try {
-                    db.execSQL(
-                        "UPDATE `categories` SET `parentId` = 9 " +
-                        "WHERE `id` = 13"
-                    )
-                } catch (e: Exception) {
-                    // Safe if doesn't exist
-                }
+                // Transport subcategories
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (20, 'Fuel', 'SUB', 2, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (21, 'Cab / Auto', 'SUB', 2, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (22, 'Public Transport', 'SUB', 2, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (23, 'Travel', 'SUB', 2, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (24, 'Road Toll', 'SUB', 2, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (25, 'Vehicle Service', 'SUB', 2, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (26, 'Parking', 'SUB', 2, '')")
 
-                // Insurance (53): parentId 5 → 7
-                try {
-                    db.execSQL(
-                        "UPDATE `categories` SET `parentId` = 7 " +
-                        "WHERE `id` = 53"
-                    )
-                } catch (e: Exception) {
-                    // Safe if doesn't exist
-                }
+                // Bills subcategories
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (30, 'Electricity', 'SUB', 3, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (31, 'Water', 'SUB', 3, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (32, 'Gas', 'SUB', 3, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (33, 'Internet', 'SUB', 3, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (35, 'Home Rent', 'SUB', 3, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (36, 'Mobile Bills', 'SUB', 3, '')")
 
-                // ────────── ADD NEW TRANSPORT SUB-CATEGORIES ──────────────
-                db.execSQL(
-                    "INSERT OR IGNORE INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) " +
-                    "VALUES (25, 'Vehicle Service', 'SUB', 2, '')"
-                )
-                db.execSQL(
-                    "INSERT OR IGNORE INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) " +
-                    "VALUES (26, 'Parking', 'SUB', 2, '')"
-                )
+                // Shopping subcategories
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (40, 'Clothing', 'SUB', 4, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (41, 'Electronics', 'SUB', 4, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (42, 'Personal Care', 'SUB', 4, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (43, 'Misc Shopping', 'SUB', 4, '')")
 
-                // ────────── ADD NEW FINANCE SUB-CATEGORIES ──────────────
-                db.execSQL(
-                    "INSERT OR IGNORE INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) " +
-                    "VALUES (76, 'Vehicle Insurance', 'SUB', 7, '')"
-                )
-                db.execSQL(
-                    "INSERT OR IGNORE INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) " +
-                    "VALUES (77, 'Bank Charges', 'SUB', 7, '')"
-                )
+                // Health subcategories
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (50, 'Doctor', 'SUB', 5, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (51, 'Medicines', 'SUB', 5, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (52, 'Gym / Fitness', 'SUB', 5, '')")
 
-                // ────────── ADD NEW HOUSEHOLD SUB-CATEGORIES ──────────────
-                db.execSQL(
-                    "INSERT OR IGNORE INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) " +
-                    "VALUES (92, 'Helper Salary', 'SUB', 9, '')"
-                )
-                db.execSQL(
-                    "INSERT OR IGNORE INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) " +
-                    "VALUES (93, 'House Maintenance', 'SUB', 9, '')"
-                )
+                // Entertainment subcategories
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (60, 'OTT Subscriptions', 'SUB', 6, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (61, 'Movies / Events', 'SUB', 6, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (62, 'Games', 'SUB', 6, '')")
 
-                // ────────── ADD NEW MAIN CATEGORY (Travel) ──────────────
-                db.execSQL(
-                    "INSERT OR IGNORE INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) " +
-                    "VALUES (200, 'Travel', 'MAIN', NULL, '✈️')"
-                )
+                // Finance subcategories
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (70, 'EMI / Loans', 'SUB', 7, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (71, 'Credit Card Payment', 'SUB', 7, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (72, 'Taxes', 'SUB', 7, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (73, 'Investments', 'SUB', 7, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (74, 'Recurring Deposit', 'SUB', 7, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (75, 'Fixed Deposit', 'SUB', 7, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (53, 'Insurance', 'SUB', 7, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (76, 'Vehicle Insurance', 'SUB', 7, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (77, 'Bank Charges', 'SUB', 7, '')")
 
-                // ────────── ADD TRAVEL SUB-CATEGORIES ──────────────
-                db.execSQL(
-                    "INSERT OR IGNORE INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) " +
-                    "VALUES (201, 'Flights', 'SUB', 200, '')"
-                )
-                db.execSQL(
-                    "INSERT OR IGNORE INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) " +
-                    "VALUES (202, 'Hotels', 'SUB', 200, '')"
-                )
-                db.execSQL(
-                    "INSERT OR IGNORE INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) " +
-                    "VALUES (203, 'Vacation', 'SUB', 200, '')"
-                )
+                // Household subcategories
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (90, 'Maid Salary', 'SUB', 9, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (91, 'Cook Salary', 'SUB', 9, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (92, 'Helper Salary', 'SUB', 9, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (93, 'House Maintenance', 'SUB', 9, '')")
+
+                // Travel subcategories
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (201, 'Flights', 'SUB', 200, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (202, 'Hotels', 'SUB', 200, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (203, 'Vacation', 'SUB', 200, '')")
+
+                // Other subcategories
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (80, 'Gifts', 'SUB', 8, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (81, 'Donations', 'SUB', 8, '')")
+                db.execSQL("INSERT INTO `categories` (`id`, `name`, `type`, `parentId`, `icon`) VALUES (82, 'Miscellaneous', 'SUB', 8, '')")
             }
         }
     }

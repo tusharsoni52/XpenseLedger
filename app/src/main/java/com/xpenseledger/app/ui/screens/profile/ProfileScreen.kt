@@ -217,8 +217,8 @@ fun ProfileScreen(
                     .semantics { contentDescription = "Full name" },
                 shape         = RoundedCornerShape(14.dp),
                 keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Words,
-                    autoCorrect    = false
+                    capitalization   = KeyboardCapitalization.Words,
+                    autoCorrectEnabled = false
                 ),
                 colors = fieldColors(nameError)
             )
@@ -307,7 +307,7 @@ fun ProfileScreen(
                 )
             ) {
                 Text(
-                    "Lock / Logout",
+                    "Logout",
                     color      = MaterialTheme.colorScheme.onErrorContainer,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -321,15 +321,15 @@ fun ProfileScreen(
     if (showLogoutDlg) {
         AlertDialog(
             onDismissRequest = { showLogoutDlg = false },
-            title            = { Text("Lock App") },
-            text             = { Text("This will lock the app and require your 6-digit PIN to re-enter.") },
+            title            = { Text("Logout") },
+            text             = { Text("You will need your 6-digit PIN to access the app again.") },
             confirmButton    = {
                 Button(
                     onClick = { showLogoutDlg = false; onLogout() },
                     colors  = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error
                     )
-                ) { Text("Lock Now") }
+                ) { Text("Logout") }
             },
             dismissButton = {
                 TextButton(onClick = { showLogoutDlg = false }) { Text("Cancel") }

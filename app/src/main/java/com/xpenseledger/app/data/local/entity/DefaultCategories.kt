@@ -17,8 +17,7 @@ object DefaultCategories {
         // ── Food ──────────────────────────────────────────────
         CategoryEntity(10, "Dining Out",      "SUB", 1),
         CategoryEntity(11, "Coffee & Snacks", "SUB", 1),
-        CategoryEntity(12, "Food Delivery",   "SUB", 1),  // Keep for backward compatibility
-        CategoryEntity(13, "Grocery",         "SUB", 9),  // Moved from Food to Household
+        CategoryEntity(12, "Food Delivery",   "SUB", 1),  // Moved from Food to Household
 
         // ── Transport ─────────────────────────────────────────
         CategoryEntity(20, "Fuel",             "SUB", 2),
@@ -69,6 +68,7 @@ object DefaultCategories {
         CategoryEntity(91, "Cook Salary",       "SUB", 9),
         CategoryEntity(92, "Helper Salary",     "SUB", 9),  // NEW
         CategoryEntity(93, "House Maintenance", "SUB", 9),  // NEW
+        CategoryEntity(13, "Grocery",           "SUB", 9),
 
         // ── Travel ────────────────────────────────────────────
         CategoryEntity(201, "Flights",   "SUB", 200),  // NEW

@@ -1,0 +1,522 @@
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateDebugResValues
+> Task :app:checkDebugAarMetadata
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :app:parseDebugLocalResources
+> Task :app:processDebugMainManifest
+> Task :app:mergeDebugResources
+> Task :app:processDebugManifest
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:processDebugManifestForPackage
+> Task :app:javaPreCompileDebugUnitTest
+> Task :app:javaPreCompileDebug
+> Task :app:processDebugResources
+> Task :app:kspDebugKotlin
+w: [ksp] D:/Study/codebase/XpenseLedger/app/src/main/java/com/xpenseledger/app/data/local/db/AppDatabase.kt:13: Schema export directory was not provided to the annotation processor so Room cannot export the schema. You can either provide `room.schemaLocation` annotation processor argument by applying the Room Gradle plugin (id 'androidx.room') OR set exportSchema to false.
+
+> Task :app:compileDebugKotlin
+
+> Task :app:compileDebugJavaWithJavac
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\dao\CategoryDao_Impl.java:14: error: package com.xpenseledger.app.data.local.entity does not exist
+import com.xpenseledger.app.data.local.entity.CategoryEntity;
+                                             ^
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\dao\CategoryDao_Impl.java:34: error: cannot find symbol
+public final class CategoryDao_Impl implements CategoryDao {
+                                               ^
+  symbol: class CategoryDao
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\dao\CategoryDao_Impl.java:37: error: cannot find symbol
+  private final EntityInsertionAdapter<CategoryEntity> __insertionAdapterOfCategoryEntity;
+                                       ^
+  symbol:   class CategoryEntity
+  location: class CategoryDao_Impl
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\dao\CategoryDao_Impl.java:65: error: cannot find symbol
+  public Object insertAll(final List<CategoryEntity> categories,
+                                     ^
+  symbol:   class CategoryEntity
+  location: class CategoryDao_Impl
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\dao\CategoryDao_Impl.java:84: error: cannot find symbol
+  public Flow<List<CategoryEntity>> getAllCategories() {
+                   ^
+  symbol:   class CategoryEntity
+  location: class CategoryDao_Impl
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\dao\CategoryDao_Impl.java:132: error: cannot find symbol
+  public Flow<List<CategoryEntity>> getMainCategories() {
+                   ^
+  symbol:   class CategoryEntity
+  location: class CategoryDao_Impl
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\dao\CategoryDao_Impl.java:180: error: cannot find symbol
+  public Flow<List<CategoryEntity>> getSubCategories(final long parentId) {
+                   ^
+  symbol:   class CategoryEntity
+  location: class CategoryDao_Impl
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\dao\CategoryDao_Impl.java:258: error: cannot find symbol
+  public Object getById(final long id, final Continuation<? super CategoryEntity> $completion) {
+                                                                  ^
+  symbol:   class CategoryEntity
+  location: class CategoryDao_Impl
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\dao\ExpenseDao_Impl.java:13: error: package com.xpenseledger.app.data.local.entity does not exist
+import com.xpenseledger.app.data.local.entity.ExpenseEntity;
+                                             ^
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\dao\ExpenseDao_Impl.java:32: error: cannot find symbol
+public final class ExpenseDao_Impl implements ExpenseDao {
+                                              ^
+  symbol: class ExpenseDao
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\dao\ExpenseDao_Impl.java:35: error: cannot find symbol
+  private final EntityInsertionAdapter<ExpenseEntity> __insertionAdapterOfExpenseEntity;
+                                       ^
+  symbol:   class ExpenseEntity
+  location: class ExpenseDao_Impl
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\dao\ExpenseDao_Impl.java:37: error: cannot find symbol
+  private final EntityDeletionOrUpdateAdapter<ExpenseEntity> __deletionAdapterOfExpenseEntity;
+                                              ^
+  symbol:   class ExpenseEntity
+  location: class ExpenseDao_Impl
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\dao\ExpenseDao_Impl.java:39: error: cannot find symbol
+  private final EntityDeletionOrUpdateAdapter<ExpenseEntity> __updateAdapterOfExpenseEntity;
+                                              ^
+  symbol:   class ExpenseEntity
+  location: class ExpenseDao_Impl
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\dao\ExpenseDao_Impl.java:116: error: cannot find symbol
+  public Object insert(final ExpenseEntity expense, final Continuation<? super Unit> $completion) {
+                             ^
+  symbol:   class ExpenseEntity
+  location: class ExpenseDao_Impl
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\dao\ExpenseDao_Impl.java:134: error: cannot find symbol
+  public Object delete(final ExpenseEntity expense, final Continuation<? super Unit> $completion) {
+                             ^
+  symbol:   class ExpenseEntity
+  location: class ExpenseDao_Impl
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\dao\ExpenseDao_Impl.java:152: error: cannot find symbol
+  public Object update(final ExpenseEntity expense, final Continuation<? super Unit> $completion) {
+                             ^
+  symbol:   class ExpenseEntity
+  location: class ExpenseDao_Impl
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\dao\ExpenseDao_Impl.java:170: error: cannot find symbol
+  public Flow<List<ExpenseEntity>> getAll() {
+                   ^
+  symbol:   class ExpenseEntity
+  location: class ExpenseDao_Impl
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\db\AppDatabase_Impl.java:14: error: cannot find symbol
+import com.xpenseledger.app.data.local.dao.CategoryDao;
+                                          ^
+  symbol:   class CategoryDao
+  location: package com.xpenseledger.app.data.local.dao
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\db\AppDatabase_Impl.java:16: error: cannot find symbol
+import com.xpenseledger.app.data.local.dao.ExpenseDao;
+                                          ^
+  symbol:   class ExpenseDao
+  location: package com.xpenseledger.app.data.local.dao
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\db\AppDatabase_Impl.java:32: error: cannot find symbol
+public final class AppDatabase_Impl extends AppDatabase {
+                                            ^
+  symbol: class AppDatabase
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\db\AppDatabase_Impl.java:33: error: cannot find symbol
+  private volatile ExpenseDao _expenseDao;
+                   ^
+  symbol:   class ExpenseDao
+  location: class AppDatabase_Impl
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\db\AppDatabase_Impl.java:35: error: cannot find symbol
+  private volatile CategoryDao _categoryDao;
+                   ^
+  symbol:   class CategoryDao
+  location: class AppDatabase_Impl
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\db\AppDatabase_Impl.java:188: error: cannot find symbol
+  public ExpenseDao expenseDao() {
+         ^
+  symbol:   class ExpenseDao
+  location: class AppDatabase_Impl
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\local\db\AppDatabase_Impl.java:202: error: cannot find symbol
+  public CategoryDao categoryDao() {
+         ^
+  symbol:   class CategoryDao
+  location: class AppDatabase_Impl
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\repository\CategoryRepositoryImpl_Factory.java:3: error: cannot find symbol
+import com.xpenseledger.app.data.local.dao.CategoryDao;
+                                          ^
+  symbol:   class CategoryDao
+  location: package com.xpenseledger.app.data.local.dao
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\repository\CategoryRepositoryImpl_Factory.java:26: error: cannot find symbol
+public final class CategoryRepositoryImpl_Factory implements Factory<CategoryRepositoryImpl> {
+                                                                     ^
+  symbol: class CategoryRepositoryImpl
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\repository\CategoryRepositoryImpl_Factory.java:27: error: cannot find symbol
+  private final Provider<CategoryDao> daoProvider;
+                         ^
+  symbol:   class CategoryDao
+  location: class CategoryRepositoryImpl_Factory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\repository\CategoryRepositoryImpl_Factory.java:29: error: cannot find symbol
+  public CategoryRepositoryImpl_Factory(Provider<CategoryDao> daoProvider) {
+                                                 ^
+  symbol:   class CategoryDao
+  location: class CategoryRepositoryImpl_Factory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\repository\CategoryRepositoryImpl_Factory.java:34: error: cannot find symbol
+  public CategoryRepositoryImpl get() {
+         ^
+  symbol:   class CategoryRepositoryImpl
+  location: class CategoryRepositoryImpl_Factory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\repository\CategoryRepositoryImpl_Factory.java:38: error: cannot find symbol
+  public static CategoryRepositoryImpl_Factory create(Provider<CategoryDao> daoProvider) {
+                                                               ^
+  symbol:   class CategoryDao
+  location: class CategoryRepositoryImpl_Factory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\repository\CategoryRepositoryImpl_Factory.java:42: error: cannot find symbol
+  public static CategoryRepositoryImpl newInstance(CategoryDao dao) {
+                                                   ^
+  symbol:   class CategoryDao
+  location: class CategoryRepositoryImpl_Factory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\repository\CategoryRepositoryImpl_Factory.java:42: error: cannot find symbol
+  public static CategoryRepositoryImpl newInstance(CategoryDao dao) {
+                ^
+  symbol:   class CategoryRepositoryImpl
+  location: class CategoryRepositoryImpl_Factory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\repository\ExpenseRepositoryImpl_Factory.java:3: error: cannot find symbol
+import com.xpenseledger.app.data.local.dao.ExpenseDao;
+                                          ^
+  symbol:   class ExpenseDao
+  location: package com.xpenseledger.app.data.local.dao
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\repository\ExpenseRepositoryImpl_Factory.java:26: error: cannot find symbol
+public final class ExpenseRepositoryImpl_Factory implements Factory<ExpenseRepositoryImpl> {
+                                                                    ^
+  symbol: class ExpenseRepositoryImpl
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\repository\ExpenseRepositoryImpl_Factory.java:27: error: cannot find symbol
+  private final Provider<ExpenseDao> daoProvider;
+                         ^
+  symbol:   class ExpenseDao
+  location: class ExpenseRepositoryImpl_Factory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\repository\ExpenseRepositoryImpl_Factory.java:29: error: cannot find symbol
+  public ExpenseRepositoryImpl_Factory(Provider<ExpenseDao> daoProvider) {
+                                                ^
+  symbol:   class ExpenseDao
+  location: class ExpenseRepositoryImpl_Factory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\repository\ExpenseRepositoryImpl_Factory.java:34: error: cannot find symbol
+  public ExpenseRepositoryImpl get() {
+         ^
+  symbol:   class ExpenseRepositoryImpl
+  location: class ExpenseRepositoryImpl_Factory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\repository\ExpenseRepositoryImpl_Factory.java:38: error: cannot find symbol
+  public static ExpenseRepositoryImpl_Factory create(Provider<ExpenseDao> daoProvider) {
+                                                              ^
+  symbol:   class ExpenseDao
+  location: class ExpenseRepositoryImpl_Factory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\repository\ExpenseRepositoryImpl_Factory.java:42: error: cannot find symbol
+  public static ExpenseRepositoryImpl newInstance(ExpenseDao dao) {
+                                                  ^
+  symbol:   class ExpenseDao
+  location: class ExpenseRepositoryImpl_Factory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\data\repository\ExpenseRepositoryImpl_Factory.java:42: error: cannot find symbol
+  public static ExpenseRepositoryImpl newInstance(ExpenseDao dao) {
+                ^
+  symbol:   class ExpenseRepositoryImpl
+  location: class ExpenseRepositoryImpl_Factory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\DatabaseModule_ProvideCategoryDaoFactory.java:3: error: cannot find symbol
+import com.xpenseledger.app.data.local.dao.CategoryDao;
+                                          ^
+  symbol:   class CategoryDao
+  location: package com.xpenseledger.app.data.local.dao
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\DatabaseModule_ProvideCategoryDaoFactory.java:4: error: cannot find symbol
+import com.xpenseledger.app.data.local.db.AppDatabase;
+                                         ^
+  symbol:   class AppDatabase
+  location: package com.xpenseledger.app.data.local.db
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\DatabaseModule_ProvideCategoryDaoFactory.java:28: error: cannot find symbol
+public final class DatabaseModule_ProvideCategoryDaoFactory implements Factory<CategoryDao> {
+                                                                               ^
+  symbol: class CategoryDao
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\DatabaseModule_ProvideCategoryDaoFactory.java:29: error: cannot find symbol
+  private final Provider<AppDatabase> dbProvider;
+                         ^
+  symbol:   class AppDatabase
+  location: class DatabaseModule_ProvideCategoryDaoFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\DatabaseModule_ProvideCategoryDaoFactory.java:31: error: cannot find symbol
+  public DatabaseModule_ProvideCategoryDaoFactory(Provider<AppDatabase> dbProvider) {
+                                                           ^
+  symbol:   class AppDatabase
+  location: class DatabaseModule_ProvideCategoryDaoFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\DatabaseModule_ProvideCategoryDaoFactory.java:36: error: cannot find symbol
+  public CategoryDao get() {
+         ^
+  symbol:   class CategoryDao
+  location: class DatabaseModule_ProvideCategoryDaoFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\DatabaseModule_ProvideCategoryDaoFactory.java:40: error: cannot find symbol
+  public static DatabaseModule_ProvideCategoryDaoFactory create(Provider<AppDatabase> dbProvider) {
+                                                                         ^
+  symbol:   class AppDatabase
+  location: class DatabaseModule_ProvideCategoryDaoFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\DatabaseModule_ProvideCategoryDaoFactory.java:44: error: cannot find symbol
+  public static CategoryDao provideCategoryDao(AppDatabase db) {
+                                               ^
+  symbol:   class AppDatabase
+  location: class DatabaseModule_ProvideCategoryDaoFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\DatabaseModule_ProvideCategoryDaoFactory.java:44: error: cannot find symbol
+  public static CategoryDao provideCategoryDao(AppDatabase db) {
+                ^
+  symbol:   class CategoryDao
+  location: class DatabaseModule_ProvideCategoryDaoFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\DatabaseModule_ProvideDatabaseFactory.java:4: error: cannot find symbol
+import com.xpenseledger.app.data.local.db.AppDatabase;
+                                         ^
+  symbol:   class AppDatabase
+  location: package com.xpenseledger.app.data.local.db
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\DatabaseModule_ProvideDatabaseFactory.java:28: error: cannot find symbol
+public final class DatabaseModule_ProvideDatabaseFactory implements Factory<AppDatabase> {
+                                                                            ^
+  symbol: class AppDatabase
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\DatabaseModule_ProvideDatabaseFactory.java:36: error: cannot find symbol
+  public AppDatabase get() {
+         ^
+  symbol:   class AppDatabase
+  location: class DatabaseModule_ProvideDatabaseFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\DatabaseModule_ProvideDatabaseFactory.java:44: error: cannot find symbol
+  public static AppDatabase provideDatabase(Context context) {
+                ^
+  symbol:   class AppDatabase
+  location: class DatabaseModule_ProvideDatabaseFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\DatabaseModule_ProvideExpenseDaoFactory.java:3: error: cannot find symbol
+import com.xpenseledger.app.data.local.dao.ExpenseDao;
+                                          ^
+  symbol:   class ExpenseDao
+  location: package com.xpenseledger.app.data.local.dao
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\DatabaseModule_ProvideExpenseDaoFactory.java:4: error: cannot find symbol
+import com.xpenseledger.app.data.local.db.AppDatabase;
+                                         ^
+  symbol:   class AppDatabase
+  location: package com.xpenseledger.app.data.local.db
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\DatabaseModule_ProvideExpenseDaoFactory.java:28: error: cannot find symbol
+public final class DatabaseModule_ProvideExpenseDaoFactory implements Factory<ExpenseDao> {
+                                                                              ^
+  symbol: class ExpenseDao
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\DatabaseModule_ProvideExpenseDaoFactory.java:29: error: cannot find symbol
+  private final Provider<AppDatabase> dbProvider;
+                         ^
+  symbol:   class AppDatabase
+  location: class DatabaseModule_ProvideExpenseDaoFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\DatabaseModule_ProvideExpenseDaoFactory.java:31: error: cannot find symbol
+  public DatabaseModule_ProvideExpenseDaoFactory(Provider<AppDatabase> dbProvider) {
+                                                          ^
+  symbol:   class AppDatabase
+  location: class DatabaseModule_ProvideExpenseDaoFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\DatabaseModule_ProvideExpenseDaoFactory.java:36: error: cannot find symbol
+  public ExpenseDao get() {
+         ^
+  symbol:   class ExpenseDao
+  location: class DatabaseModule_ProvideExpenseDaoFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\DatabaseModule_ProvideExpenseDaoFactory.java:40: error: cannot find symbol
+  public static DatabaseModule_ProvideExpenseDaoFactory create(Provider<AppDatabase> dbProvider) {
+                                                                        ^
+  symbol:   class AppDatabase
+  location: class DatabaseModule_ProvideExpenseDaoFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\DatabaseModule_ProvideExpenseDaoFactory.java:44: error: cannot find symbol
+  public static ExpenseDao provideExpenseDao(AppDatabase db) {
+                                             ^
+  symbol:   class AppDatabase
+  location: class DatabaseModule_ProvideExpenseDaoFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\DatabaseModule_ProvideExpenseDaoFactory.java:44: error: cannot find symbol
+  public static ExpenseDao provideExpenseDao(AppDatabase db) {
+                ^
+  symbol:   class ExpenseDao
+  location: class DatabaseModule_ProvideExpenseDaoFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvideEncryptionManagerFactory.java:3: error: cannot find symbol
+import com.xpenseledger.app.security.crypto.EncryptionManager;
+                                           ^
+  symbol:   class EncryptionManager
+  location: package com.xpenseledger.app.security.crypto
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvideEncryptionManagerFactory.java:4: error: cannot find symbol
+import com.xpenseledger.app.security.crypto.KeyStoreManager;
+                                           ^
+  symbol:   class KeyStoreManager
+  location: package com.xpenseledger.app.security.crypto
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvideEncryptionManagerFactory.java:28: error: cannot find symbol
+public final class SecurityModule_ProvideEncryptionManagerFactory implements Factory<EncryptionManager> {
+                                                                                     ^
+  symbol: class EncryptionManager
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvideEncryptionManagerFactory.java:29: error: cannot find symbol
+  private final Provider<KeyStoreManager> keyStoreManagerProvider;
+                         ^
+  symbol:   class KeyStoreManager
+  location: class SecurityModule_ProvideEncryptionManagerFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvideEncryptionManagerFactory.java:32: error: cannot find symbol
+      Provider<KeyStoreManager> keyStoreManagerProvider) {
+               ^
+  symbol:   class KeyStoreManager
+  location: class SecurityModule_ProvideEncryptionManagerFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvideEncryptionManagerFactory.java:37: error: cannot find symbol
+  public EncryptionManager get() {
+         ^
+  symbol:   class EncryptionManager
+  location: class SecurityModule_ProvideEncryptionManagerFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvideEncryptionManagerFactory.java:42: error: cannot find symbol
+      Provider<KeyStoreManager> keyStoreManagerProvider) {
+               ^
+  symbol:   class KeyStoreManager
+  location: class SecurityModule_ProvideEncryptionManagerFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvideEncryptionManagerFactory.java:46: error: cannot find symbol
+  public static EncryptionManager provideEncryptionManager(KeyStoreManager keyStoreManager) {
+                                                           ^
+  symbol:   class KeyStoreManager
+  location: class SecurityModule_ProvideEncryptionManagerFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvideEncryptionManagerFactory.java:46: error: cannot find symbol
+  public static EncryptionManager provideEncryptionManager(KeyStoreManager keyStoreManager) {
+                ^
+  symbol:   class EncryptionManager
+  location: class SecurityModule_ProvideEncryptionManagerFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvideKeyStoreManagerFactory.java:3: error: cannot find symbol
+import com.xpenseledger.app.security.crypto.KeyStoreManager;
+                                           ^
+  symbol:   class KeyStoreManager
+  location: package com.xpenseledger.app.security.crypto
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvideKeyStoreManagerFactory.java:26: error: cannot find symbol
+public final class SecurityModule_ProvideKeyStoreManagerFactory implements Factory<KeyStoreManager> {
+                                                                                   ^
+  symbol: class KeyStoreManager
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvideKeyStoreManagerFactory.java:28: error: cannot find symbol
+  public KeyStoreManager get() {
+         ^
+  symbol:   class KeyStoreManager
+  location: class SecurityModule_ProvideKeyStoreManagerFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvideKeyStoreManagerFactory.java:36: error: cannot find symbol
+  public static KeyStoreManager provideKeyStoreManager() {
+                ^
+  symbol:   class KeyStoreManager
+  location: class SecurityModule_ProvideKeyStoreManagerFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvidePinManagerFactory.java:4: error: cannot find symbol
+import com.xpenseledger.app.security.pin.PinManager;
+                                        ^
+  symbol:   class PinManager
+  location: package com.xpenseledger.app.security.pin
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvidePinManagerFactory.java:28: error: cannot find symbol
+public final class SecurityModule_ProvidePinManagerFactory implements Factory<PinManager> {
+                                                                              ^
+  symbol: class PinManager
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvidePinManagerFactory.java:36: error: cannot find symbol
+  public PinManager get() {
+         ^
+  symbol:   class PinManager
+  location: class SecurityModule_ProvidePinManagerFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvidePinManagerFactory.java:44: error: cannot find symbol
+  public static PinManager providePinManager(Context context) {
+                ^
+  symbol:   class PinManager
+  location: class SecurityModule_ProvidePinManagerFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvideSessionManagerFactory.java:3: error: package com.xpenseledger.app.security.session does not exist
+import com.xpenseledger.app.security.session.SessionManager;
+                                            ^
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvideSessionManagerFactory.java:26: error: cannot find symbol
+public final class SecurityModule_ProvideSessionManagerFactory implements Factory<SessionManager> {
+                                                                                  ^
+  symbol: class SessionManager
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvideSessionManagerFactory.java:28: error: cannot find symbol
+  public SessionManager get() {
+         ^
+  symbol:   class SessionManager
+  location: class SecurityModule_ProvideSessionManagerFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvideSessionManagerFactory.java:36: error: cannot find symbol
+  public static SessionManager provideSessionManager() {
+                ^
+  symbol:   class SessionManager
+  location: class SecurityModule_ProvideSessionManagerFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvideUserProfileManagerFactory.java:4: error: cannot find symbol
+import com.xpenseledger.app.security.profile.UserProfileManager;
+                                            ^
+  symbol:   class UserProfileManager
+  location: package com.xpenseledger.app.security.profile
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvideUserProfileManagerFactory.java:28: error: cannot find symbol
+public final class SecurityModule_ProvideUserProfileManagerFactory implements Factory<UserProfileManager> {
+                                                                                      ^
+  symbol: class UserProfileManager
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvideUserProfileManagerFactory.java:36: error: cannot find symbol
+  public UserProfileManager get() {
+         ^
+  symbol:   class UserProfileManager
+  location: class SecurityModule_ProvideUserProfileManagerFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\di\SecurityModule_ProvideUserProfileManagerFactory.java:45: error: cannot find symbol
+  public static UserProfileManager provideUserProfileManager(Context context) {
+                ^
+  symbol:   class UserProfileManager
+  location: class SecurityModule_ProvideUserProfileManagerFactory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\domain\usecase\ExportExpensesUseCase_Factory.java:4: error: package com.xpenseledger.app.domain.repository does not exist
+import com.xpenseledger.app.domain.repository.ExpenseRepository;
+                                             ^
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\domain\usecase\ExportExpensesUseCase_Factory.java:5: error: cannot find symbol
+import com.xpenseledger.app.security.crypto.EncryptionManager;
+                                           ^
+  symbol:   class EncryptionManager
+  location: package com.xpenseledger.app.security.crypto
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\domain\usecase\ExportExpensesUseCase_Factory.java:28: error: cannot find symbol
+public final class ExportExpensesUseCase_Factory implements Factory<ExportExpensesUseCase> {
+                                                                    ^
+  symbol: class ExportExpensesUseCase
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\domain\usecase\ExportExpensesUseCase_Factory.java:29: error: cannot find symbol
+  private final Provider<ExpenseRepository> repositoryProvider;
+                         ^
+  symbol:   class ExpenseRepository
+  location: class ExportExpensesUseCase_Factory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\domain\usecase\ExportExpensesUseCase_Factory.java:31: error: cannot find symbol
+  private final Provider<EncryptionManager> encryptionManagerProvider;
+                         ^
+  symbol:   class EncryptionManager
+  location: class ExportExpensesUseCase_Factory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\domain\usecase\ExportExpensesUseCase_Factory.java:35: error: cannot find symbol
+  public ExportExpensesUseCase_Factory(Provider<ExpenseRepository> repositoryProvider,
+                                                ^
+  symbol:   class ExpenseRepository
+  location: class ExportExpensesUseCase_Factory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\domain\usecase\ExportExpensesUseCase_Factory.java:36: error: cannot find symbol
+      Provider<EncryptionManager> encryptionManagerProvider,
+               ^
+  symbol:   class EncryptionManager
+  location: class ExportExpensesUseCase_Factory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\domain\usecase\ExportExpensesUseCase_Factory.java:44: error: cannot find symbol
+  public ExportExpensesUseCase get() {
+         ^
+  symbol:   class ExportExpensesUseCase
+  location: class ExportExpensesUseCase_Factory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\domain\usecase\ExportExpensesUseCase_Factory.java:48: error: cannot find symbol
+  public static ExportExpensesUseCase_Factory create(Provider<ExpenseRepository> repositoryProvider,
+                                                              ^
+  symbol:   class ExpenseRepository
+  location: class ExportExpensesUseCase_Factory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\domain\usecase\ExportExpensesUseCase_Factory.java:49: error: cannot find symbol
+      Provider<EncryptionManager> encryptionManagerProvider,
+               ^
+  symbol:   class EncryptionManager
+  location: class ExportExpensesUseCase_Factory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\domain\usecase\ExportExpensesUseCase_Factory.java:54: error: cannot find symbol
+  public static ExportExpensesUseCase newInstance(ExpenseRepository repository,
+                                                  ^
+  symbol:   class ExpenseRepository
+  location: class ExportExpensesUseCase_Factory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\domain\usecase\ExportExpensesUseCase_Factory.java:55: error: cannot find symbol
+      EncryptionManager encryptionManager, ContentResolver contentResolver) {
+      ^
+  symbol:   class EncryptionManager
+  location: class ExportExpensesUseCase_Factory
+D:\Study\codebase\XpenseLedger\app\build\generated\ksp\debug\java\com\xpenseledger\app\domain\usecase\ExportExpensesUseCase_Factory.java:54: error: cannot find symbol
+  public static ExportExpensesUseCase newInstance(ExpenseRepository repository,
+                ^
+  symbol:   class ExportExpensesUseCase
+  location: class ExportExpensesUseCase_Factory
+Note: Some messages have been simplified; recompile with -Xdiags:verbose to get full output
+100 errors
+only showing the first 100 errors, of 293 total; use -Xmaxerrs if you would like to see more
+
+> Task :app:compileDebugJavaWithJavac FAILED
+w: Detected multiple Kotlin daemon sessions at 
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugJavaWithJavac'.
+> Compilation failed; see the compiler error output for details.
+
+* Try:
+> Run with --info option to get more log output.
+> Run with --scan to get full insights.
+
+BUILD FAILED in 5m 15s
+18 actionable tasks: 18 executed

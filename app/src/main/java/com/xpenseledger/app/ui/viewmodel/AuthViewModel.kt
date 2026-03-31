@@ -131,11 +131,13 @@ class AuthViewModel @Inject constructor(
         val skipAutoSubmit = _mode.value == AuthMode.MIGRATE_PIN
                              && _legacyPinLength.value == 0
         if (!skipAutoSubmit && pinBuffer.length == maxLen) {
-            // Launch in a coroutine so _pinLength.value = maxLen is committed to the
-            // StateFlow and Compose recomposes (all dots filled) BEFORE clearBuffer()
-            // resets it back to 0. Without this, the 6th dot never appears filled.
+            // delay(80) gives Compose at least 4-5 frames to render the final filled
+            // dot before processPin() calls clearBuffer() and resets pinLength to 0.
+            // yield() alone only suspends within the coroutine dispatcher — it does
+            // NOT wait for Compose to commit the recomposition, so the 6th dot was
+            // never visibly filled before being cleared.
             viewModelScope.launch {
-                kotlinx.coroutines.yield()   // suspend → let collectors read the new value
+                delay(80L)
                 processPin()
             }
         }
@@ -155,7 +157,7 @@ class AuthViewModel @Inject constructor(
         val minLen = if (_mode.value == AuthMode.MIGRATE_PIN) 4 else MIN_PIN_LENGTH
         if (pinBuffer.length < minLen) return
         viewModelScope.launch {
-            kotlinx.coroutines.yield()
+            delay(80L)
             processPin()
         }
     }
@@ -173,6 +175,28 @@ class AuthViewModel @Inject constructor(
         lockoutCount = 0
         clearBuffer()
         _events.tryEmit(AuthEvent.Success)
+    }
+
+    /**
+     * Reinitialize the auth mode based on current PIN state.
+     * Called when returning to LoginScreen after logout to ensure the mode
+     * reflects whether a PIN is currently set up.
+     */
+    fun reinitializeMode() {
+        clearBuffer()
+        _mode.value = when {
+            !pinManager.hasPin()                        -> AuthMode.SET_PIN
+            pinManager.storedPinLength() < PIN_LENGTH   -> AuthMode.MIGRATE_PIN
+            else                                        -> AuthMode.UNLOCK
+        }
+        _legacyPinLength.value = if (pinManager.hasPin() && pinManager.storedPinLength() < PIN_LENGTH)
+            pinManager.storedPinLength() else 0
+        _failedAttempts.value = 0
+        _isLockedOut.value = false
+        _lockoutSecondsRemaining.value = 0
+        lockoutCount = 0
+        lockoutJob?.cancel()
+        lockoutJob = null
     }
 
     /**

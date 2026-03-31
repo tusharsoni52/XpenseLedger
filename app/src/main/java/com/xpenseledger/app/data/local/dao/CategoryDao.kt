@@ -28,13 +28,4 @@ interface CategoryDao {
 
     @Query("SELECT * FROM categories WHERE id = :id")
     suspend fun getById(id: Long): CategoryEntity?
-
-    // ─ DEBUG METHODS ─────────────────────────────────────────────────────────
-
-    /**
-     * DEBUG: Returns fallback category IDs that exist.
-     * Used to verify migration 5→6 created fallback categories.
-     */
-    @Query("SELECT id FROM categories WHERE id IN (8, 82)")
-    suspend fun debugGetFallbackCategories(): List<Long>
 }
