@@ -221,24 +221,71 @@ class ExpenseViewModel @Inject constructor(
             .associate { it.key to it.value }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyMap())
 
-    /** Per-month expense totals with category breakdown — EXPENSE only. */
+    /** Per-month totals with category breakdown — all types included. */
     val monthComparison: StateFlow<List<MonthData>> = expenses
         .map { list ->
-            list.filter { it.type == TransactionType.EXPENSE }
-                .groupBy { monthKey(it) }
+            list.groupBy { monthKey(it) }
                 .entries.sortedBy { it.key }
                 .map { (month, items) ->
+                    val expenses   = items.filter { it.type == TransactionType.EXPENSE }
+                    val income     = items.filter { it.type == TransactionType.INCOME }
+                    val transfers  = items.filter { it.type == TransactionType.TRANSFER }
+                    val totalExp   = expenses.sumOf { it.amount }
+                    val totalInc   = income.sumOf { it.amount }
+                    val totalTrans = transfers.sumOf { it.amount }
                     MonthData(
-                        month      = month,
-                        total      = items.sumOf { it.amount },
-                        byCategory = items.groupBy { it.category }
-                            .mapValues { (_, v) -> v.sumOf { it.amount } }
-                            .entries.sortedByDescending { it.value }
-                            .associate { it.key to it.value }
+                        month          = month,
+                        total          = totalExp,
+                        byCategory     = expenses.groupBy { it.category }
+                                            .mapValues { (_, v) -> v.sumOf { it.amount } }
+                                            .entries.sortedByDescending { it.value }
+                                            .associate { it.key to it.value },
+                        totalIncome    = totalInc,
+                        totalTransfers = totalTrans,
+                        netSavings     = totalInc - totalExp - totalTrans
                     )
                 }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
+
+    /** All-time aggregate analytics stats. */
+    val allTimeStats: StateFlow<AllTimeStats> = expenses
+        .map { list ->
+            val totalSpent   = list.filter { it.type == TransactionType.EXPENSE  }.sumOf { it.amount }
+            val totalIncome  = list.filter { it.type == TransactionType.INCOME   }.sumOf { it.amount }
+            val totalTrans   = list.filter { it.type == TransactionType.TRANSFER }.sumOf { it.amount }
+            val netSavings   = totalIncome - totalSpent - totalTrans
+            val savingsRate  = if (totalIncome > 0) (netSavings / totalIncome).toFloat().coerceIn(0f, 1f) else 0f
+            val expenses     = list.filter { it.type == TransactionType.EXPENSE }
+            val biggest      = expenses.maxByOrNull { it.amount }
+            AllTimeStats(
+                totalSpent           = totalSpent,
+                totalIncome          = totalIncome,
+                totalTransfers       = totalTrans,
+                netSavings           = netSavings,
+                savingsRate          = savingsRate,
+                transactionCount     = list.size,
+                avgTransaction       = if (expenses.isNotEmpty()) totalSpent / expenses.size else 0.0,
+                biggestExpense       = biggest?.amount ?: 0.0,
+                biggestExpenseTitle  = biggest?.title ?: ""
+            )
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), AllTimeStats())
+
+    /** Expense totals grouped by day-of-week (0=Mon … 6=Sun). */
+    val dayOfWeekStats: StateFlow<DayOfWeekStats> = expenses
+        .map { list ->
+            val cal = java.util.Calendar.getInstance()
+            val totals = MutableList(7) { 0.0 }
+            list.filter { it.type == TransactionType.EXPENSE }.forEach { exp ->
+                cal.timeInMillis = exp.timestamp
+                // Calendar.DAY_OF_WEEK: 1=Sun, 2=Mon … 7=Sat → map to 0=Mon…6=Sun
+                val dow = (cal.get(java.util.Calendar.DAY_OF_WEEK) + 5) % 7
+                totals[dow] += exp.amount
+            }
+            DayOfWeekStats(totals = totals, maxTotal = totals.maxOrNull() ?: 0.0)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), DayOfWeekStats())
 
     // ── Public commands ───────────────────────────────────────────────────────
 
@@ -375,9 +422,35 @@ class ExpenseViewModel @Inject constructor(
 // ─────────────────────────────────────────────────────────────────────────────
 
 data class MonthData(
-    val month:      String,
-    val total:      Double,
-    val byCategory: Map<String, Double>
+    val month:          String,
+    val total:          Double,               // expense total
+    val byCategory:     Map<String, Double>,
+    val totalIncome:    Double = 0.0,
+    val totalTransfers: Double = 0.0,
+    val netSavings:     Double = 0.0          // income − expenses − transfers
+)
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Analytics data classes
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** All-time aggregate stats shown in the Insights tab. */
+data class AllTimeStats(
+    val totalSpent:      Double = 0.0,
+    val totalIncome:     Double = 0.0,
+    val totalTransfers:  Double = 0.0,
+    val netSavings:      Double = 0.0,
+    val savingsRate:     Float  = 0f,          // 0–1 fraction
+    val transactionCount: Int   = 0,
+    val avgTransaction:  Double = 0.0,
+    val biggestExpense:  Double = 0.0,
+    val biggestExpenseTitle: String = ""
+)
+
+/** Spending totals indexed by day-of-week (0=Mon … 6=Sun). */
+data class DayOfWeekStats(
+    val totals: List<Double> = List(7) { 0.0 },   // Mon–Sun
+    val maxTotal: Double = 0.0
 )
 
 // ─────────────────────────────────────────────────────────────────────────────

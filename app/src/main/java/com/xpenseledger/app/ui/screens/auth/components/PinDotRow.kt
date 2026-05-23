@@ -36,9 +36,9 @@ enum class PinDotState { NORMAL, SUCCESS, FAILURE }
 
 // ── Colour constants ──────────────────────────────────────────────────────────
 
-private val CyanAccent   = Color(0xFF00E5FF)   // vivid cyan glow
-private val PinGrad1     = Color(0xFF00D4A0)   // teal
-private val PinGrad2     = CyanAccent          // cyan highlight
+private val IndigoGlow = XpensePrimary              // soft indigo — matches XpensePrimary
+private val PinGrad1   = XpensePrimary              // indigo start
+private val PinGrad2   = XpenseSecondary            // violet end
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -118,7 +118,7 @@ private fun PinDot(filled: Boolean, state: PinDotState, index: Int) {
         targetValue = when (state) {
             PinDotState.SUCCESS -> ColorSuccess.copy(alpha = 0.55f)
             PinDotState.FAILURE -> DarkError.copy(alpha = 0.55f)
-            PinDotState.NORMAL  -> if (filled) CyanAccent.copy(alpha = 0.45f)
+            PinDotState.NORMAL  -> if (filled) IndigoGlow.copy(alpha = 0.45f)
                                    else Color.Transparent
         },
         animationSpec = tween(220),
@@ -141,7 +141,7 @@ private fun PinDot(filled: Boolean, state: PinDotState, index: Int) {
         targetValue = when (state) {
             PinDotState.SUCCESS -> ColorSuccess
             PinDotState.FAILURE -> DarkError
-            PinDotState.NORMAL  -> if (filled) CyanAccent else Color.White.copy(alpha = 0.22f)
+            PinDotState.NORMAL  -> if (filled) IndigoGlow else Color.White.copy(alpha = 0.22f)
         },
         animationSpec = tween(200),
         label = "borderCol$index"

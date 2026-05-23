@@ -51,7 +51,7 @@ import com.xpenseledger.app.ui.theme.XpensePrimary
 import com.xpenseledger.app.ui.theme.XpenseSecondary
 
 // ── BrandGradient ──────────────────────────────────────────────────
-/** Cyan → indigo gradient used for primary actions throughout the app. */
+/** Emerald → lime gradient used for primary actions throughout the app. */
 val BrandGradient: Brush
     get() = Brush.linearGradient(
         listOf(XpensePrimary, XpenseSecondary),

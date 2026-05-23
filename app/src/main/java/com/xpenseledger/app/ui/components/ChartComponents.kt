@@ -110,7 +110,7 @@ fun BarChart(
                 val yStart    = (canvasHeight - 50f - barHeight)
 
                 drawRect(
-                    color   = Color(0xFF00D4A0).copy(alpha = 0.8f),
+                    color   = Color(0xFF6C8EF5).copy(alpha = 0.80f),   // soft indigo — XpensePrimary
                     topLeft = Offset(xStart, yStart),
                     size    = Size(barWidth, barHeight)
                 )
@@ -137,12 +137,18 @@ fun BarChart(
 //  Doughnut Chart  (Category breakdown)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// 10-colour palette matching categoryBadgeColor in DashboardComponents
+// 10-colour palette — Midnight Slate Premium, matches categoryBadgeColor in DashboardComponents
 private val kDoughnutColors = listOf(
-    Color(0xFF00D4A0), Color(0xFF7B68EE), Color(0xFFFFB74D),
-    Color(0xFFFF5370), Color(0xFF4CAF50), Color(0xFF2196F3),
-    Color(0xFFE91E63), Color(0xFF9C27B0), Color(0xFFFF9800),
-    Color(0xFF00BCD4)
+    Color(0xFF22D3EE), // cyan
+    Color(0xFF6366F1), // indigo
+    Color(0xFF34D399), // emerald
+    Color(0xFFF59E0B), // amber
+    Color(0xFFF87171), // red
+    Color(0xFF818CF8), // violet
+    Color(0xFF38BDF8), // sky
+    Color(0xFFA78BFA), // purple
+    Color(0xFF4ADE80), // green
+    Color(0xFFFB923C)  // orange
 )
 
 private fun doughnutColor(index: Int): Color =
@@ -237,7 +243,7 @@ fun DoughnutChart(
 
                 // Background ring (always full 360°, behind the coloured arcs)
                 drawArc(
-                    color      = Color(0xFF2A2D42),
+                    color      = Color(0xFF243044),   // DarkSurfaceVariant — elevated slate
                     startAngle = 0f,
                     sweepAngle = 360f,
                     useCenter  = false,

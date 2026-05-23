@@ -41,26 +41,23 @@ import androidx.compose.ui.unit.sp
 import com.xpenseledger.app.ui.theme.XpensePrimary
 import com.xpenseledger.app.ui.theme.XpenseSecondary
 
-// ── Glass colour tokens ───────────────────────────────────────────────────────
+// ── Midnight Slate colour tokens ─────────────────────────────────────────────
 
-private val CyanAccent        = Color(0xFF22D3EE)       // matches theme XpensePrimary
-private val GlassKeyFill      = Color(0x1AFFFFFF)       // 10% white — semi-transparent glass
-private val GlassKeyFillPress = Color(0x33FFFFFF)       // 20% white — brightens on press
-private val GlassKeyBorder    = Color(0x33FFFFFF)       // 20% white ring
-private val ConfirmGrad1      = XpensePrimary           // cyan
-private val ConfirmGrad2      = XpenseSecondary         // indigo
+private val IndigoAccent      = XpensePrimary           // soft indigo — matches app theme
+private val GlassKeyFill      = Color(0x1A6C8EF5)       // 10% indigo — semi-transparent glass
+private val GlassKeyFillPress = Color(0x336C8EF5)       // 20% indigo — brightens on press
+private val GlassKeyBorder    = Color(0x336C8EF5)       // 20% indigo ring
+private val ConfirmGrad1      = XpensePrimary           // soft indigo
+private val ConfirmGrad2      = XpenseSecondary         // soft violet
 
 /**
- * Glass-style numeric PIN keypad.
+ * Midnight-Slate-style numeric PIN keypad.
  *
- * All digit keys are semi-transparent circles (10% white fill) with a thin
- * white-20% border — matching the glassmorphism card above them.
+ * All digit keys are semi-transparent indigo-tinted circles (10% indigo fill)
+ * with a thin indigo-20% border — matching the theme's glassmorphism card.
  *
- * The confirm key retains its cyan→indigo gradient so it reads as the primary
+ * The confirm key retains its indigo→violet gradient so it reads as the primary
  * action. The backspace key is fully ghost (transparent, border only).
- *
- * Performance: [MutableInteractionSource] is remembered once per button;
- * the only animation is a spring scale — zero allocation per frame.
  */
 @Composable
 fun NumericKeypad(
@@ -210,12 +207,12 @@ private fun GlassKeypadButton(
         )
     }
 
-    // Subtle cyan glow behind the confirm button only
+    // Subtle indigo glow behind the confirm button only
     val glowMod = if (isConfirm && enabled) {
         Modifier.drawBehind {
             drawCircle(
                 brush  = Brush.radialGradient(
-                    listOf(CyanAccent.copy(alpha = 0.28f), Color.Transparent),
+                    listOf(IndigoAccent.copy(alpha = 0.28f), Color.Transparent),
                     radius = size.minDimension * 0.95f
                 ),
                 radius = size.minDimension * 0.95f
@@ -234,7 +231,7 @@ private fun GlassKeypadButton(
             .border(
                 width = 1.dp,
                 color = when {
-                    isConfirm && enabled -> CyanAccent.copy(alpha = 0.45f)
+                    isConfirm && enabled -> IndigoAccent.copy(alpha = 0.45f)
                     isGhost              -> Color.White.copy(alpha = 0.18f)
                     else                 -> GlassKeyBorder
                 },
@@ -245,7 +242,7 @@ private fun GlassKeypadButton(
                 indication        = ripple(
                     bounded = true,
                     radius  = 34.dp,
-                    color   = if (isConfirm) CyanAccent else Color.White
+                    color   = if (isConfirm) IndigoAccent else Color.White
                 ),
                 enabled           = enabled,
                 role              = Role.Button,

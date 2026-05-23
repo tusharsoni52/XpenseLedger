@@ -74,19 +74,19 @@ import com.xpenseledger.app.ui.viewmodel.AuthViewModel
 import kotlinx.coroutines.delay
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Design tokens — all private to this file
+//  Design tokens — Midnight Slate Premium palette (matches app theme)
 // ─────────────────────────────────────────────────────────────────────────────
 
-private val CyanAccent      = Color(0xFF22D3EE)   // XpensePrimary — cyan
-private val TealStart       = Color(0xFF0D4F5C)   // deep teal gradient start
-private val IndigoEnd       = Color(0xFF1E1250)   // deep indigo gradient end
-private val MidCyan         = Color(0xFF0C3A52)   // centre blend
-private val GlassFill       = Color(0x1AFFFFFF)   // 10% white — card body
-private val GlassBorderTop  = Color(0x40FFFFFF)   // 25% white — bright top edge
-private val GlassBorderBot  = Color(0x0DFFFFFF)   // 5%  white — dim bottom edge
-private val GlassHighlight  = Color(0x18FFFFFF)   // inner top shimmer
+private val IndigoAccent    = Color(0xFF6C8EF5)   // XpensePrimary  — soft indigo
+private val NavyStart       = Color(0xFF0A1220)   // deep navy gradient start
+private val VioletEnd       = Color(0xFF1A1040)   // deep violet gradient end
+private val MidNavy         = Color(0xFF0F1923)   // centre blend — matches DarkBackground
+private val GlassFill       = Color(0x1A6C8EF5)   // 10% indigo — card body tint
+private val GlassBorderTop  = Color(0x336C8EF5)   // 20% indigo — bright top edge
+private val GlassBorderBot  = Color(0x0A6C8EF5)   // 4%  indigo — dim bottom edge
+private val GlassHighlight  = Color(0x14FFFFFF)   // inner top shimmer
 private val SubtextColor    = Color(0x99FFFFFF)   // 60% white — secondary text
-private val LockRingBg      = Color(0x26000000)   // dark circle behind lock icon
+private val LockRingBg      = Color(0x261A2535)   // dark navy circle behind lock icon
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Root screen
@@ -301,7 +301,7 @@ fun LoginScreen(
                             Icon(
                                 imageVector = Icons.Default.Face,
                                 contentDescription = null,
-                                tint     = Color(0xFF050818),
+                                tint     = Color(0xFF0F1923),
                                 modifier = Modifier.size(17.dp)
                             )
                         }
@@ -363,9 +363,9 @@ fun LoginScreen(
  * Full-screen layered background for the Login screen.
  *
  * Layers (bottom → top):
- * 1. Dark teal → cyan-mid → deep indigo diagonal gradient
- * 2. Radial cyan glow at top-right
- * 3. Radial indigo glow at bottom-left
+ * 1. Deep navy → midnight navy → deep violet diagonal gradient
+ * 2. Radial indigo glow at top-right
+ * 3. Radial violet glow at bottom-left
  * 4. Faint diagonal light streak (static — no animation)
  * 5. Content
  */
@@ -378,10 +378,10 @@ private fun GlassBackground(content: @Composable () -> Unit) {
             .background(
                 Brush.linearGradient(
                     colorStops = arrayOf(
-                        0.00f to TealStart,
-                        0.40f to MidCyan,
-                        0.70f to Color(0xFF0F1A3D),
-                        1.00f to IndigoEnd
+                        0.00f to NavyStart,
+                        0.40f to MidNavy,
+                        0.70f to Color(0xFF141030),
+                        1.00f to VioletEnd
                     ),
                     start = Offset(0f, 0f),
                     end   = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
@@ -393,20 +393,20 @@ private fun GlassBackground(content: @Composable () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .drawBehind {
-                    // Top-right cyan orb
+                    // Top-right indigo orb
                     drawCircle(
                         brush = Brush.radialGradient(
-                            listOf(CyanAccent.copy(alpha = 0.16f), Color.Transparent),
+                            listOf(IndigoAccent.copy(alpha = 0.14f), Color.Transparent),
                             center = Offset(size.width * 0.88f, size.height * 0.10f),
                             radius = size.width * 0.65f
                         ),
                         center = Offset(size.width * 0.88f, size.height * 0.10f),
                         radius = size.width * 0.65f
                     )
-                    // Bottom-left indigo orb
+                    // Bottom-left violet orb
                     drawCircle(
                         brush = Brush.radialGradient(
-                            listOf(XpenseSecondary.copy(alpha = 0.20f), Color.Transparent),
+                            listOf(XpenseSecondary.copy(alpha = 0.18f), Color.Transparent),
                             center = Offset(size.width * 0.12f, size.height * 0.88f),
                             radius = size.width * 0.60f
                         ),
@@ -522,7 +522,7 @@ private fun GlassLockIcon(
                     drawCircle(
                         brush = Brush.radialGradient(
                             listOf(
-                                CyanAccent.copy(alpha = pulseAlpha * 0.20f),
+                                IndigoAccent.copy(alpha = pulseAlpha * 0.20f),
                                 Color.Transparent
                             )
                         )
@@ -539,28 +539,28 @@ private fun GlassLockIcon(
                     width = 1.dp,
                     brush = Brush.sweepGradient(
                         listOf(
-                            CyanAccent.copy(alpha = pulseAlpha),
+                            IndigoAccent.copy(alpha = pulseAlpha),
                             XpenseSecondary.copy(alpha = pulseAlpha * 0.45f),
-                            CyanAccent.copy(alpha = pulseAlpha * 0.15f),
-                            CyanAccent.copy(alpha = pulseAlpha)
+                            IndigoAccent.copy(alpha = pulseAlpha * 0.15f),
+                            IndigoAccent.copy(alpha = pulseAlpha)
                         )
                     ),
                     shape = CircleShape
                 )
         )
 
-        // Layer 3 — icon circle: glass fill + cyan gradient border + lock icon
+        // Layer 3 — icon circle: glass fill + indigo gradient border + lock icon
         Box(
             modifier = Modifier
                 .size(68.dp)
                 // Glass fill inside the icon circle
                 .background(LockRingBg, CircleShape)
-                // Cyan → indigo gradient ring
+                // Indigo → violet gradient ring
                 .border(
                     width = 1.5.dp,
                     brush = Brush.linearGradient(
                         listOf(
-                            CyanAccent.copy(alpha = 0.85f),
+                            IndigoAccent.copy(alpha = 0.85f),
                             XpenseSecondary.copy(alpha = 0.50f)
                         )
                     ),
@@ -570,7 +570,7 @@ private fun GlassLockIcon(
                 .drawBehind {
                     drawCircle(
                         brush = Brush.radialGradient(
-                            listOf(CyanAccent.copy(alpha = 0.10f), Color.Transparent)
+                            listOf(IndigoAccent.copy(alpha = 0.12f), Color.Transparent)
                         )
                     )
                 },
@@ -579,7 +579,7 @@ private fun GlassLockIcon(
             Icon(
                 imageVector        = Icons.Default.Lock,
                 contentDescription = "login_lock_icon",
-                tint               = CyanAccent,
+                tint               = IndigoAccent,
                 modifier           = Modifier.size(30.dp)
             )
         }

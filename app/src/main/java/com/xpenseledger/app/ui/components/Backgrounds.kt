@@ -1,7 +1,6 @@
 package com.xpenseledger.app.ui.components
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -15,43 +14,40 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.xpenseledger.app.R
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Colour constants (only used inside this file — avoids polluting theme)
+//  Colour constants — Midnight Slate Premium palette
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Dashboard (Home)
+private val DashTop    = Color(0xFF0F1923)   // midnight navy
+private val DashMid    = Color(0xFF1A2535)   // dark slate
+private val DashBottom = Color(0xFF0F1923)   // back to midnight navy
 
-private val DashTop      = Color(0xFF0F172A)   // neumorphic base
-private val DashMid      = Color(0xFF111D35)   // navy shift
-private val DashBottom   = Color(0xFF0D1F2A)   // subtle teal tint
-private val DashGlow1    = Color(0xFF22D3EE)   // cyan
-private val DashGlow2    = Color(0xFF6366F1)   // indigo
+// Soft form background (AddExpense)
+private val SoftTop    = Color(0xFF0F1923)
+private val SoftBottom = Color(0xFF1A2535)
 
-private val SoftTop      = Color(0xFF0F172A)
-private val SoftBottom   = Color(0xFF0D1E1F)
-private val SoftGlow     = Color(0xFF22D3EE)
+// Analytics tab
+private val AnalyticsTop    = Color(0xFF0F1923)
+private val AnalyticsMid    = Color(0xFF172030)
+private val AnalyticsBottom = Color(0xFF0F1923)
 
-private val AnalyticsTop     = Color(0xFF0C0F1A)
-private val AnalyticsMid     = Color(0xFF0F1A2A)
-private val AnalyticsBottom  = Color(0xFF0A1520)
-private val AnalyticsGlow    = Color(0xFF6366F1)
-
+// Indigo/violet glow colors
+private val EmeraldGlow  = Color(0xFF6C8EF5)   // soft indigo — primary
+private val LimeGlow     = Color(0xFFA78BFA)   // soft violet — accent
+private val GoldGlow     = Color(0xFFF59E0B)   // warm amber  — currency
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  2. DASHBOARD BACKGROUND  ── Home / Expenses screen
-//       Multi-stop dark gradient  +  two large colour-glow orbs (teal & indigo)
-//       +  subtle dot-grid overlay  +  mild scrim
+//  DASHBOARD BACKGROUND — Home / Expenses screen
+//  Midnight navy gradient + soft indigo/violet radial glows + dot-grid texture + scrim
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Full-screen background for the Home / Expenses tab.
- *
- * Creates a deep financial-dashboard feel with ambient brand-colour glows
- * and a barely-visible dot-grid texture.
+ * Midnight navy base with soft indigo-glow orbs and a barely-visible
+ * dot-grid texture — premium FinTech analytics feel.
  */
 @Composable
 fun DashboardBackground(
@@ -64,73 +60,76 @@ fun DashboardBackground(
             .background(
                 Brush.verticalGradient(
                     colorStops = arrayOf(
-                        0.0f to DashTop,
+                        0.0f  to DashTop,
                         0.45f to DashMid,
-                        1.0f to DashBottom
+                        1.0f  to DashBottom
                     )
                 )
             )
     ) {
-        // ── Large brand-colour orbs ────────────────────────────────────────
+        // ── Emerald glow orbs ─────────────────────────────────────────────────
         Canvas(modifier = Modifier.fillMaxSize()) {
-            // Top teal orb
+            // Top-right emerald orb
             val topR = size.width * 0.65f
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0x1800D4A0), Color.Transparent),
-                    center = Offset(size.width * 0.80f, size.height * 0.08f),
+                    colors = listOf(EmeraldGlow.copy(alpha = 0.12f), Color.Transparent),
+                    center = Offset(size.width * 0.85f, size.height * 0.08f),
                     radius = topR * 1.4f
                 ),
                 radius = topR,
-                center = Offset(size.width * 0.80f, size.height * 0.08f)
+                center = Offset(size.width * 0.85f, size.height * 0.08f)
             )
-            // Mid indigo orb
-            val midR = size.width * 0.60f
+            // Mid-left lime accent orb
+            val midR = size.width * 0.55f
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0x127B68EE), Color.Transparent),
-                    center = Offset(size.width * 0.15f, size.height * 0.50f),
+                    colors = listOf(LimeGlow.copy(alpha = 0.07f), Color.Transparent),
+                    center = Offset(size.width * 0.12f, size.height * 0.48f),
                     radius = midR * 1.4f
                 ),
                 radius = midR,
-                center = Offset(size.width * 0.15f, size.height * 0.50f)
+                center = Offset(size.width * 0.12f, size.height * 0.48f)
             )
-            // Bottom teal orb
-            val botR = size.width * 0.50f
+            // Bottom emerald orb
+            val botR = size.width * 0.48f
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0x1500D4A0), Color.Transparent),
-                    center = Offset(size.width * 0.70f, size.height * 0.92f),
+                    colors = listOf(EmeraldGlow.copy(alpha = 0.09f), Color.Transparent),
+                    center = Offset(size.width * 0.68f, size.height * 0.90f),
                     radius = botR * 1.4f
                 ),
                 radius = botR,
-                center = Offset(size.width * 0.70f, size.height * 0.92f)
+                center = Offset(size.width * 0.68f, size.height * 0.90f)
             )
         }
 
-        // ── Dot-grid texture ───────────────────────────────────────────────
-        Box(modifier = Modifier.fillMaxSize().alpha(0.50f)) {
-            val t = 48.dp
-            // Fill a 8-col × 20-row grid
-            for (row in 0..19) {
-                for (col in 0..7) {
-                    Image(
-                        painter = painterResource(R.drawable.bg_dot_grid),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .offset(x = (col * 48).dp, y = (row * 48).dp)
-                            .size(t),
-                        contentScale = ContentScale.FillBounds
+        // ── Dot-grid texture (Canvas — no drawable needed) ────────────────────
+        Canvas(
+            modifier = Modifier
+                .fillMaxSize()
+                .alpha(0.18f)
+        ) {
+            val spacing = 48.dp.toPx()
+            val dotR    = 1.5.dp.toPx()
+            val cols = (size.width  / spacing).toInt() + 2
+            val rows = (size.height / spacing).toInt() + 2
+            for (row in 0..rows) {
+                for (col in 0..cols) {
+                    drawCircle(
+                        color  = Color.White,
+                        radius = dotR,
+                        center = Offset(col * spacing, row * spacing)
                     )
                 }
             }
         }
 
-        // ── Subtle overlay scrim ───────────────────────────────────────────
+        // ── Subtle overlay scrim ──────────────────────────────────────────────
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0x280F1117))
+                .background(Color(0x1A0F1923))
         )
 
         content()
@@ -138,19 +137,10 @@ fun DashboardBackground(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  3. SOFT GRADIENT BACKGROUND  ── Add Expense dialog / sheet
-//       Minimal two-stop gradient with a single centred teal glow, no texture.
-//       Designed to feel calm and focused so the form fields stay prominent.
+//  SOFT GRADIENT BACKGROUND — Add Expense form
+//  Calm two-stop navy gradient, single centred glow — form fields prominent
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Gentle background intended for form/dialog surfaces (Add Expense).
- * Uses a diagonal gradient + a single soft glow so the screen is distinct
- * from the Home screen without being distracting.
- *
- * Attach to the dialog's inner [Column] or a wrapping [Box] rather than
- * a full-screen surface.
- */
 @Composable
 fun SoftGradientBackground(
     modifier: Modifier = Modifier,
@@ -166,56 +156,43 @@ fun SoftGradientBackground(
                         1.0f to SoftBottom
                     ),
                     start = Offset(0f, 0f),
-                    end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+                    end   = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
                 )
             )
     ) {
-        // Single subtle teal glow at top-centre
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val glowRadius = size.width * 0.55f
+            // Top-centre emerald glow — form focus area
+            val glowRadius = size.width * 0.52f
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0x1400D4A0), Color.Transparent),
-                    center = Offset(size.width * 0.50f, size.height * 0.05f),
-                    radius = glowRadius * 1.4f        // gradient fades before edge
+                    colors = listOf(EmeraldGlow.copy(alpha = 0.10f), Color.Transparent),
+                    center = Offset(size.width * 0.50f, size.height * 0.04f),
+                    radius = glowRadius * 1.4f
                 ),
                 radius = glowRadius,
-                center = Offset(size.width * 0.50f, size.height * 0.05f)
+                center = Offset(size.width * 0.50f, size.height * 0.04f)
             )
-            // Bottom-right indigo accent — centre well inside, radius kept small
-            val accentRadius = size.width * 0.28f
+            // Bottom-right lime accent — subtle depth
+            val accentRadius = size.width * 0.26f
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0x0C7B68EE), Color.Transparent),
-                    center = Offset(size.width * 0.72f, size.height * 0.78f),
-                    radius = accentRadius * 1.4f      // gradient fades before edge
+                    colors = listOf(LimeGlow.copy(alpha = 0.06f), Color.Transparent),
+                    center = Offset(size.width * 0.75f, size.height * 0.78f),
+                    radius = accentRadius * 1.4f
                 ),
                 radius = accentRadius,
-                center = Offset(size.width * 0.72f, size.height * 0.78f)
+                center = Offset(size.width * 0.75f, size.height * 0.78f)
             )
         }
-
         content()
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  4. ANALYTICS BACKGROUND  ── Compare / month-comparison tab
-//       Dark indigo-tinted gradient  +  bar-chart vector decoration in the
-//       upper portion  +  radial glow  +  horizontal rule lines mimicking
-//       chart grid lines
+//  ANALYTICS BACKGROUND — Compare / month-comparison tab
+//  Spreadsheet-inspired: dark navy base + chart grid lines + glow + scrim
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Analytics-inspired background for the Compare tab.
- *
- * Layers (bottom → top):
- * 1. Deep indigo-tinted gradient (dark navy → very dark teal)
- * 2. Horizontal faint "chart grid" lines drawn via [Canvas]
- * 3. Bar-chart vector image decorating the top-right corner
- * 4. Radial glow from the bar-chart area
- * 5. Scrim to keep content readable
- */
 @Composable
 fun AnalyticsBackground(
     modifier: Modifier = Modifier,
@@ -227,76 +204,86 @@ fun AnalyticsBackground(
             .background(
                 Brush.verticalGradient(
                     colorStops = arrayOf(
-                        0.0f to AnalyticsTop,
+                        0.0f  to AnalyticsTop,
                         0.55f to AnalyticsMid,
-                        1.0f to AnalyticsBottom
+                        1.0f  to AnalyticsBottom
                     )
                 )
             )
     ) {
-        // ── Faint horizontal chart-grid lines ──────────────────────────────
+        // ── Spreadsheet-style chart grid lines ────────────────────────────────
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val lineColor = Color(0x0F00D4A0)
+            val lineColor = EmeraldGlow.copy(alpha = 0.06f)
             val lineCount = 8
             val spacing = size.height / (lineCount + 1)
             repeat(lineCount) { i ->
                 val y = spacing * (i + 1)
                 drawLine(
-                    color = lineColor,
-                    start = Offset(0f, y),
-                    end = Offset(size.width, y),
+                    color       = lineColor,
+                    start       = Offset(0f, y),
+                    end         = Offset(size.width, y),
                     strokeWidth = 1.2f
                 )
             }
-            // Vertical baseline faint line
+            // Vertical axis baseline
             drawLine(
-                color = Color(0x0A7B68EE),
-                start = Offset(size.width * 0.08f, 0f),
-                end = Offset(size.width * 0.08f, size.height),
+                color       = LimeGlow.copy(alpha = 0.05f),
+                start       = Offset(size.width * 0.08f, 0f),
+                end         = Offset(size.width * 0.08f, size.height),
                 strokeWidth = 1f
             )
         }
 
-        // ── Bar-chart decorative vector (top-right corner) ─────────────────
-        Image(
-            painter = painterResource(R.drawable.bg_bar_chart),
-            contentDescription = null,
+        // ── Bar-chart decorative (Canvas — no drawable needed) ───────────────
+        Canvas(
             modifier = Modifier
                 .size(width = 200.dp, height = 125.dp)
                 .align(Alignment.TopEnd)
                 .offset(x = 24.dp, y = (-8).dp)
-                .alpha(0.45f),
-            contentScale = ContentScale.FillBounds
-        )
+                .alpha(0.22f)
+        ) {
+            val barHeights = listOf(0.45f, 0.70f, 0.55f, 0.85f, 0.60f, 0.75f, 0.50f)
+            val barW  = size.width / (barHeights.size * 2f)
+            val gap   = barW
+            barHeights.forEachIndexed { i, frac ->
+                val barH = size.height * frac
+                val x    = i * (barW + gap) + gap / 2f
+                drawRoundRect(
+                    color       = LimeGlow.copy(alpha = 0.75f),
+                    topLeft     = Offset(x, size.height - barH),
+                    size        = androidx.compose.ui.geometry.Size(barW, barH),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f)
+                )
+            }
+        }
 
-        // ── Indigo glow behind the chart area ──────────────────────────────
+        // ── Emerald glow behind chart area ────────────────────────────────────
         Canvas(modifier = Modifier.fillMaxSize()) {
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0x157B68EE), Color.Transparent),
-                    center = Offset(size.width * 0.75f, size.height * 0.15f),
+                    colors = listOf(EmeraldGlow.copy(alpha = 0.11f), Color.Transparent),
+                    center = Offset(size.width * 0.78f, size.height * 0.15f),
                     radius = size.width * 0.55f
                 ),
                 radius = size.width * 0.55f,
-                center = Offset(size.width * 0.75f, size.height * 0.15f)
+                center = Offset(size.width * 0.78f, size.height * 0.15f)
             )
-            // Bottom teal glow
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0x1100D4A0), Color.Transparent),
-                    center = Offset(size.width * 0.25f, size.height * 0.88f),
-                    radius = size.width * 0.45f
+                    colors = listOf(LimeGlow.copy(alpha = 0.07f), Color.Transparent),
+                    center = Offset(size.width * 0.22f, size.height * 0.85f),
+                    radius = size.width * 0.42f
                 ),
-                radius = size.width * 0.45f,
-                center = Offset(size.width * 0.25f, size.height * 0.88f)
+                radius = size.width * 0.42f,
+                center = Offset(size.width * 0.22f, size.height * 0.85f)
             )
         }
 
-        // ── Scrim ──────────────────────────────────────────────────────────
+        // ── Scrim ─────────────────────────────────────────────────────────────
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0x200C0F1A))
+                .background(Color(0x180F1923))
         )
 
         content()
@@ -304,23 +291,19 @@ fun AnalyticsBackground(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  FINTECH VAULT BACKGROUND  ── Premium deep blue → purple gradient
+//  FINTECH BACKGROUND — Premium midnight navy → dark slate gradient
 //  Static abstract shapes — NO particles, NO floating circles
 // ─────────────────────────────────────────────────────────────────────────────
 
-private val FintechDeep1   = Color(0xFF050D1A)
-private val FintechDeep2   = Color(0xFF0A0E2A)
-private val FintechDeep3   = Color(0xFF100820)
-private val FintechGlowA   = Color(0xFF6366F1)   // indigo
-private val FintechGlowB   = Color(0xFF22D3EE)   // cyan
-private val FintechGlowC   = Color(0xFF4547C4)   // deep indigo
+private val FintechDeep1 = Color(0xFF080F17)
+private val FintechDeep2 = Color(0xFF0F1923)
+private val FintechDeep3 = Color(0xFF1A2535)
 
 /**
- * Premium fintech background:
- * - Deep blue-to-purple diagonal gradient base
- * - Two large soft abstract arc shapes (Canvas, no images)
- * - Subtle noise-like diagonal line grid for depth
- * - NO particles, NO floating circles, NO distracting animations
+ * Premium dark fintech background:
+ * - Deep navy diagonal gradient base
+ * - Soft abstract arc shapes in indigo and violet
+ * - Subtle diagonal line grid for fintech data texture
  */
 @Composable
 fun FintechBackground(
@@ -334,61 +317,58 @@ fun FintechBackground(
                 Brush.linearGradient(
                     colorStops = arrayOf(
                         0.00f to FintechDeep1,
-                        0.35f to FintechDeep2,
-                        0.65f to FintechDeep3,
-                        1.00f to Color(0xFF080520)
+                        0.40f to FintechDeep2,
+                        0.70f to FintechDeep3,
+                        1.00f to Color(0xFF0F1923)
                     ),
                     start = Offset(0f, 0f),
                     end   = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
                 )
             )
     ) {
-        // ── Abstract arc shapes on Canvas ─────────────────────────────────────
         Canvas(modifier = Modifier.fillMaxSize()) {
             val w = size.width
             val h = size.height
 
-            // Shape 1: Large arc / ring segment top-right — indigo glow
+            // Top-right arc — emerald glow
             drawArc(
                 brush      = Brush.radialGradient(
-                    colors  = listOf(FintechGlowA.copy(alpha = 0.18f), Color.Transparent),
-                    center  = Offset(w * 0.90f, h * 0.08f),
-                    radius  = w * 0.75f
+                    colors = listOf(EmeraldGlow.copy(alpha = 0.14f), Color.Transparent),
+                    center = Offset(w * 0.90f, h * 0.08f),
+                    radius = w * 0.75f
                 ),
                 startAngle = 110f,
                 sweepAngle = 140f,
                 useCenter  = false,
                 topLeft    = Offset(w * 0.30f, -h * 0.15f),
                 size       = androidx.compose.ui.geometry.Size(w * 1.2f, h * 0.55f),
-                style      = androidx.compose.ui.graphics.drawscope.Stroke(
-                    width = w * 0.38f
-                )
+                style      = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.38f)
             )
 
-            // Shape 2: Large soft ellipse blob bottom-left — teal
+            // Bottom-left ellipse — lime glow
             drawOval(
                 brush   = Brush.radialGradient(
-                    colors  = listOf(FintechGlowB.copy(alpha = 0.10f), Color.Transparent),
-                    center  = Offset(w * 0.10f, h * 0.88f),
-                    radius  = w * 0.65f
+                    colors = listOf(LimeGlow.copy(alpha = 0.08f), Color.Transparent),
+                    center = Offset(w * 0.10f, h * 0.88f),
+                    radius = w * 0.65f
                 ),
                 topLeft = Offset(-w * 0.30f, h * 0.62f),
                 size    = androidx.compose.ui.geometry.Size(w * 0.85f, h * 0.45f)
             )
 
-            // Shape 3: Subtle deep-purple fill centre-right for depth
+            // Centre-right gold depth circle
             drawCircle(
                 brush  = Brush.radialGradient(
-                    colors = listOf(FintechGlowC.copy(alpha = 0.13f), Color.Transparent),
+                    colors = listOf(GoldGlow.copy(alpha = 0.06f), Color.Transparent),
                     center = Offset(w * 0.78f, h * 0.58f),
-                    radius = w * 0.55f
+                    radius = w * 0.50f
                 ),
                 center = Offset(w * 0.78f, h * 0.58f),
-                radius = w * 0.55f
+                radius = w * 0.50f
             )
 
-            // Diagonal fine-line grid (very subtle — adds fintech "data" texture)
-            val lineAlpha = 0.035f
+            // Diagonal fine-line grid — fintech data texture
+            val lineAlpha = 0.030f
             val step = w * 0.065f
             var x = -h.toFloat()
             while (x < w + h) {

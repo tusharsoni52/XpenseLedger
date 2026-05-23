@@ -238,7 +238,7 @@ fun FinancialSummaryCard(
                 .clip(RoundedCornerShape(24.dp))
                 .background(
                     Brush.linearGradient(
-                        colors = listOf(Color(0xFF1E293B), Color(0xFF0F172A)),
+                        colors = listOf(Color(0xFF1A2535), Color(0xFF0F1923)),
                         start  = Offset(0f, 0f),
                         end    = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
                     )

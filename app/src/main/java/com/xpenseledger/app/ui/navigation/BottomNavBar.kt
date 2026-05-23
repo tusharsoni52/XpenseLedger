@@ -54,7 +54,7 @@ fun AppBottomNavBar(navController: NavController) {
 
     Surface(
         modifier        = Modifier.fillMaxWidth(),
-        color           = Color(0xFF0D1117),
+        color           = Color(0xFF0F1923),   // midnight navy — matches dashboard bg
         shadowElevation = 16.dp,
         tonalElevation  = 0.dp
     ) {
@@ -106,12 +106,12 @@ private fun RowScope.RegularNavItem(
     onClick:  () -> Unit
 ) {
     val iconColor by animateColorAsState(
-        targetValue   = if (selected) XpensePrimary else Color(0xFF6B7280),
+        targetValue   = if (selected) XpensePrimary else Color(0xFF4A5568),
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
         label         = "iconColor_${item.label}"
     )
     val labelColor by animateColorAsState(
-        targetValue   = if (selected) XpensePrimary else Color(0xFF6B7280),
+        targetValue   = if (selected) XpensePrimary else Color(0xFF4A5568),
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
         label         = "labelColor_${item.label}"
     )
@@ -145,10 +145,10 @@ private fun RowScope.RegularNavItem(
         },
         colors    = NavigationBarItemDefaults.colors(
             selectedIconColor   = XpensePrimary,
-            unselectedIconColor = Color(0xFF6B7280),
+            unselectedIconColor = Color(0xFF4A5568),
             selectedTextColor   = XpensePrimary,
-            unselectedTextColor = Color(0xFF6B7280),
-            indicatorColor      = XpensePrimary.copy(alpha = 0.12f)
+            unselectedTextColor = Color(0xFF4A5568),
+            indicatorColor      = XpensePrimary.copy(alpha = 0.15f)
         ),
         modifier  = Modifier.weight(1f)
     )

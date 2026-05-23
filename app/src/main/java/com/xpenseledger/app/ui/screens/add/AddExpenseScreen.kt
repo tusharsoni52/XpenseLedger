@@ -366,7 +366,7 @@ fun AddExpenseScreen(
                     .windowInsetsPadding(
                         WindowInsets.ime.union(WindowInsets.navigationBars)
                     ),
-                color           = Color(0xFF0E1520),
+                color           = Color(0xFF0F1923),
                 shadowElevation = 8.dp
             ) {
                 Box(
@@ -444,7 +444,7 @@ private fun FormHeaderBar(title: String, onDismiss: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFF0E1520))
+            .background(Color(0xFF0F1923))
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         IconButton(onClick = onDismiss, modifier = Modifier.align(Alignment.CenterStart)) {

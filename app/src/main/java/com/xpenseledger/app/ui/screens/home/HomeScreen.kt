@@ -124,7 +124,7 @@ fun HomeScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF0F172A))
+                    .background(Color(0xFF0F1923))
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 Text(

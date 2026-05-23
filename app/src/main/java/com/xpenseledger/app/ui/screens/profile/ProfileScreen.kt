@@ -103,7 +103,7 @@ fun ProfileScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF0D1117))
+                    .background(Color(0xFF0F1923))
                     .padding(horizontal = 16.dp, vertical = 10.dp)
             ) {
                 Text(
@@ -156,14 +156,14 @@ fun ProfileScreen(
                             Text(
                                 text       = name.trim().first().uppercaseChar().toString(),
                                 style      = MaterialTheme.typography.headlineMedium,
-                                color      = Color(0xFF0D1117),
+                                color      = Color(0xFF0F1923),
                                 fontWeight = FontWeight.Bold
                             )
                         } else {
                             Icon(
                                 imageVector        = Icons.Default.Person,
                                 contentDescription = null,
-                                tint               = Color(0xFF0D1117),
+                                tint               = Color(0xFF0F1923),
                                 modifier           = Modifier.size(32.dp)
                             )
                         }
@@ -278,9 +278,9 @@ fun ProfileScreen(
                 colors   = ButtonDefaults.buttonColors(containerColor = XpensePrimary)
             ) {
                 Icon(Icons.Default.Check, contentDescription = null,
-                    tint = Color(0xFF0D1117), modifier = Modifier.size(18.dp))
+                    tint = Color(0xFF0F1923), modifier = Modifier.size(18.dp))
                 Spacer(Modifier.size(8.dp))
-                Text("Save Profile", color = Color(0xFF0D1117), fontWeight = FontWeight.SemiBold)
+                Text("Save Profile", color = Color(0xFF0F1923), fontWeight = FontWeight.SemiBold)
             }
 
             // ── Divider ───────────────────────────────────────────────────────
