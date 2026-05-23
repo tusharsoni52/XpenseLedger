@@ -9,7 +9,7 @@ import com.xpenseledger.app.data.local.dao.ExpenseDao
 import com.xpenseledger.app.data.local.entity.CategoryEntity
 import com.xpenseledger.app.data.local.entity.ExpenseEntity
 
-@Database(entities = [ExpenseEntity::class, CategoryEntity::class], version = 8)
+@Database(entities = [ExpenseEntity::class, CategoryEntity::class], version = 9)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
     abstract fun categoryDao(): CategoryDao
@@ -92,25 +92,24 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
-         * v5 → v6 : Complete category refactor with fresh start
+         * v5 → v6 : Complete category refactor with preserved expense data
          *
-         * STRATEGY: Clear old expenses to avoid compatibility issues
-         * RESULT: Clean slate with new category structure
+         * STRATEGY: Preserve all existing expenses, rebuild category structure
+         * RESULT: Users keep their expense data, new category system available
          *
          * NEW MAIN CATEGORIES (All compatible with new structure):
          *   1 Food, 2 Transport, 3 Bills, 4 Shopping, 5 Health
          *   6 Entertainment, 7 Finance, 8 Other, 9 Household, 200 Travel
          *
-         * All subcategories defined in DefaultCategories.kt
-         * Users will add fresh expenses with new categories
+         * All subcategories defined below
+         * Existing expenses remain intact with their category associations
          */
         val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                // ────────── CLEAR OLD EXPENSES ──────────────────────────
-                // Delete all old expenses that may have incompatible category references
-                db.execSQL("DELETE FROM `expenses`")
+                // ────────── PRESERVE EXPENSES - NO DELETION ──────────────────────────
+                // Existing expenses remain in database with their category references
 
-                // ────────── CLEAR OLD CATEGORIES ──────────────────────────
+                // ────────── CLEAR OLD CATEGORIES ONLY ──────────────────────────
                 db.execSQL("DELETE FROM `categories`")
 
                 // ────────── INSERT NEW CATEGORIES (From DefaultCategories) ──────────────────
@@ -225,6 +224,20 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("$ins (303, 'Freelance',    'SUB',  300,  '')")
                 db.execSQL("$ins (304, 'Interest',     'SUB',  300,  '')")
                 db.execSQL("$ins (305, 'Other Income', 'SUB',  300,  '')")
+            }
+        }
+
+        /**
+         * v8 → v9 : No-op migration (version bump only)
+         *
+         * Purpose: Safely increment version for users affected by the data loss bug.
+         * This ensures users who already have version 8 can upgrade without issues.
+         * No schema changes required.
+         */
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // No database changes - version bump only
+                // This migration ensures proper version tracking after bug fix
             }
         }
     }

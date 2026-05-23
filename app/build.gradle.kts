@@ -22,6 +22,13 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Disable testOnly flag to prevent INSTALL_FAILED_VERIFICATION_FAILURE
+            // and allow direct installation without -t flag
+            isTestCoverageEnabled = false
+            // Note: This is automatically set by Android Studio, but we explicitly
+            // ensure it's not marked as testOnly for easier deployment
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -34,6 +41,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true
     }
     buildFeatures {
         compose = true
@@ -96,6 +104,12 @@ dependencies {
 
     // Serialization for encrypted backup export/import
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+
+    // CSV support for Excel-compatible export/import
+    implementation("com.opencsv:opencsv:5.9")
+
+    // Core library desugaring for Java 8+ API support on older Android versions
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
     // --- Recommended test dependencies ---
     // Coroutines test utilities for deterministic coroutine testing

@@ -3,10 +3,20 @@ package com.xpenseledger.app.ui.activity
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.biometric.BiometricManager
@@ -26,12 +36,8 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Prevent screenshots and screen recording — applied before super so
-        // the system never has a chance to capture an unprotected frame.
         applySecureFlag()
-
         super.onCreate(savedInstanceState)
-
         setContent {
             XpenseLedgerTheme {
                 AppRoot()
@@ -39,23 +45,27 @@ class MainActivity : FragmentActivity() {
         }
     }
 
-    /** Re-apply on every resume so the flag survives task-switching / PiP. */
     override fun onResume() {
         super.onResume()
         applySecureFlag()
     }
 
-    /**
-     * Lock the app whenever it is moved to the background (home button, task switch,
-     * power button, incoming call, etc.).
-     * onStop fires after onPause and before the activity is no longer visible.
-     */
     override fun onStop() {
         super.onStop()
-        // Obtain SessionViewModel from the ViewModelStore — no Compose needed here
+
+        // ── Force-hide IME at Window level ────────────────────────────────────
+        // LocalSoftwareKeyboardController is unreliable when the keyboard is
+        // owned by a composable in a different subtree (e.g. AddExpenseScreen
+        // while the lock overlay is in a sibling Box). Using WindowInsetsController
+        // directly on the Window always works regardless of focus owner.
+        currentFocus?.clearFocus()   // remove focus so IME doesn't reappear on resume
+        WindowInsetsControllerCompat(window, window.decorView)
+            .hide(WindowInsetsCompat.Type.ime())
+
+        // ── Trigger session lock ──────────────────────────────────────────────
         val sessionVm = androidx.lifecycle.ViewModelProvider(this)
             .get(SessionViewModel::class.java)
-        sessionVm.lock()
+        sessionVm.lockWithGracePeriod()
     }
 
     private fun applySecureFlag() {
@@ -68,9 +78,9 @@ class MainActivity : FragmentActivity() {
 
 @Composable
 private fun AppRoot() {
-    val sessionVm:  SessionViewModel    = hiltViewModel()
-    val expenseVm:  ExpenseViewModel    = hiltViewModel()
-    val categoryVm: CategoryViewModel   = hiltViewModel()
+    val sessionVm:  SessionViewModel     = hiltViewModel()
+    val expenseVm:  ExpenseViewModel     = hiltViewModel()
+    val categoryVm: CategoryViewModel    = hiltViewModel()
     val profileVm:  UserProfileViewModel = hiltViewModel()
     val context = LocalContext.current
 
@@ -85,13 +95,9 @@ private fun AppRoot() {
     val isLocked by sessionVm.isLocked.collectAsState()
     sessionVm.startInactivityTimer()
 
-    if (isLocked) {
-        LoginScreen(
-            biometricAuthManager = biometricAuthManager,
-            canUseBiometrics     = canUseBiometrics,
-            onAuthenticated      = { sessionVm.unlock() }
-        )
-    } else {
+    // ── AppNavGraph is ALWAYS in the tree ──────────────────────────────────────
+    Box(modifier = Modifier.fillMaxSize()) {
+
         AppNavGraph(
             expenseVm      = expenseVm,
             categoryVm     = categoryVm,
@@ -99,5 +105,18 @@ private fun AppRoot() {
             onUserActivity = { sessionVm.onUserInteraction() },
             onLogout       = { sessionVm.lock() }
         )
+
+        // Lock-screen overlay
+        AnimatedVisibility(
+            visible = isLocked,
+            enter   = fadeIn(tween(180)),
+            exit    = fadeOut(tween(220))
+        ) {
+            LoginScreen(
+                biometricAuthManager = biometricAuthManager,
+                canUseBiometrics     = canUseBiometrics,
+                onAuthenticated      = { sessionVm.unlock() }
+            )
+        }
     }
 }

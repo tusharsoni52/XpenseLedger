@@ -3,7 +3,6 @@ package com.xpenseledger.app.ui.screens.add
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -11,24 +10,27 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -37,18 +39,17 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -69,9 +70,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
@@ -84,6 +83,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.xpenseledger.app.domain.model.Category
 import com.xpenseledger.app.domain.model.Expense
 import com.xpenseledger.app.domain.model.TransactionType
@@ -107,19 +107,19 @@ import java.util.Locale
 /**
  * Full-screen Add / Edit Expense form.
  *
- * Security measures applied here (UI layer):
- *  • Title: control-char stripped, max [TITLE_MAX_LEN] chars, min 2 chars
- *  • Amount: digit-only filter, single dot, max 2 dp, range 0< x ≤9,999,999
- *  • Negative/zero amounts: blocked by [AddExpenseFormState] and button disabled state
- *  • Submit guard: [AddExpenseFormState.submitting] disables the button on first tap to
- *    prevent rapid double-submit regardless of animation timing
- *  • Fields show errors only after the user has interacted with them (not on first render)
- *  • No validation logic is in the composable's lambda bodies — all derived from [AddExpenseFormState]
+ * UX improvements (Option B + E):
+ *  • Category picker replaced with a visual 3-column icon grid — all categories
+ *    visible at-a-glance, no dropdown to open/scroll.
+ *  • Subcategory picker is a horizontal scrollable chip row — 1-tap selection.
+ *  • Amount keyboard uses ImeAction.Next → auto-dismisses keyboard so the
+ *    category grid is immediately tappable without a manual keyboard close.
+ *  • Recent categories (up to 3) shown in a dedicated row at the top of the
+ *    grid for instant 1-tap repeat entries.
  *
- * @param editExpense  When non-null the form pre-fills and the header reads "Edit Expense".
- * @param categoryVm   Provides main/sub category lists.
- * @param onDismiss    Called on back / × press.
- * @param onConfirm    Called with validated values — note [title] is already trimmed.
+ * Security measures (unchanged):
+ *  • Title: control-char stripped, max [TITLE_MAX_LEN] chars, min 2 chars
+ *  • Amount: digit-only filter, single dot, max 2 dp, range 0 < x ≤ 9,999,999
+ *  • Submit guard: debounced 800 ms via [rememberDebouncedClick]
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -137,33 +137,70 @@ fun AddExpenseScreen(
         type:          TransactionType
     ) -> Unit,
     editExpense:       Expense? = null,
-    initialTimestamp:  Long     = System.currentTimeMillis()
+    initialTimestamp:  Long     = System.currentTimeMillis(),
+    // ViewModel injected here — Hilt provides it scoped to the NavBackStackEntry
+    // so it survives session locks while staying isolated to this destination.
+    formVm: AddExpenseViewModel = hiltViewModel()
 ) {
-    // Collect all categories once; filter synchronously per transaction type
-    // so the list reacts instantly when the user taps Expense / Income / Transfer.
     val allMainCategories by categoryVm.mainCategories.collectAsState()
 
     // ── Form state ────────────────────────────────────────────────────────────
+    // Edit mode: always use the expense as-is — no draft persistence needed.
+    // Add mode:  seed from ViewModel (SavedStateHandle) so in-progress drafts
+    //            survive session locks and process death.
     val form = remember(editExpense) {
-        AddExpenseFormState(
-            initialTitle           = editExpense?.title   ?: "",
-            initialAmount          = editExpense?.amount?.toString() ?: "",
-            initialTimestamp       = editExpense?.timestamp ?: initialTimestamp,
-            initialTransactionType = editExpense?.type ?: TransactionType.EXPENSE
-        )
+        if (editExpense != null) {
+            AddExpenseFormState(
+                initialTitle           = editExpense.title,
+                initialAmount          = editExpense.amount.toString(),
+                initialTimestamp       = editExpense.timestamp,
+                initialTransactionType = editExpense.type
+            )
+        } else {
+            // Restore draft from ViewModel (SavedStateHandle)
+            AddExpenseFormState(
+                initialTitle           = formVm.title.value,
+                initialAmount          = formVm.amount.value,
+                initialTimestamp       = formVm.timestamp.value,
+                initialTransactionType = formVm.transactionType.value
+            )
+        }
+    }
+
+    // ── Sync form → ViewModel on every change (add mode only) ─────────────────
+    // LaunchedEffect with snapshot-derived keys re-runs whenever any field changes,
+    // writing the new value into SavedStateHandle for process-death survival.
+    if (editExpense == null) {
+        LaunchedEffect(form.title)           { formVm.setTitle(form.title) }
+        LaunchedEffect(form.amount)          { formVm.setAmount(form.amount) }
+        LaunchedEffect(form.timestamp)       { formVm.setTimestamp(form.timestamp) }
+        LaunchedEffect(form.transactionType) { formVm.setTransactionType(form.transactionType) }
+        LaunchedEffect(form.mainCat?.id)     { formVm.setCategoryId(form.mainCat?.id) }
+        LaunchedEffect(form.subCat?.id)      { formVm.setSubCategoryId(form.subCat?.id) }
     }
 
     // ── Category list filtered by current transaction type ────────────────────
-    // Recomputes on every recomposition when form.transactionType changes.
     val mainCategories = remember(form.transactionType, allMainCategories) {
         categoryVm.mainCategoriesFor(form.transactionType)
     }
 
+    // Recent categories (for Option E quick-pick row)
+    val recentCategories = remember(form.transactionType, allMainCategories) {
+        // Only show recents that are valid for the current transaction type
+        val validIds = mainCategories.map { it.id }.toSet()
+        categoryVm.recentMainCategories().filter { it.id in validIds }
+    }
+
     val keyboard = LocalSoftwareKeyboardController.current
+
     val safeConfirm = rememberDebouncedClick(debounceMs = 800L) {
         keyboard?.hide()
         form.touchAll()
         if (!form.isValid) return@rememberDebouncedClick
+        // Record recently used category before calling onConfirm
+        form.mainCat?.id?.let { categoryVm.recordRecentCategory(it) }
+        // Clear saved draft — entry was completed successfully
+        if (editExpense == null) formVm.clearForm()
         onConfirm(
             form.title.trim(),
             form.amount.toDouble(),
@@ -186,7 +223,6 @@ fun AddExpenseScreen(
     }
 
     // Auto-select when there is only ONE valid category for the chosen type
-    // (Income → "Income"; Transfer → "Finance"). Clears when switching away.
     LaunchedEffect(form.transactionType, mainCategories) {
         if (editExpense == null && mainCategories.size == 1) {
             form.mainCat = mainCategories.first()
@@ -198,7 +234,6 @@ fun AddExpenseScreen(
     } ?: emptyList()
 
     // Auto-select single subcategory when only one is available
-    // (Transfer tab: Finance has only Family Support visible → auto-pick it)
     LaunchedEffect(subList) {
         if (editExpense == null && subList.size == 1 && form.subCat == null) {
             form.subCat = subList.first()
@@ -254,16 +289,8 @@ fun AddExpenseScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                // navigationBarsPadding / imePadding are intentionally NOT on the root Column.
-                // When this composable runs inside a Dialog (decorFitsSystemWindows=true),
-                // applying them at the root pushes the entire layout—including the pinned
-                // button—off the bottom edge of the screen. Instead:
-                //   • The scrollable field column uses imePadding() so fields scroll up
-                //     when the keyboard opens, keeping the focused field visible.
-                //   • The button Surface uses windowInsetsPadding(ime + navigationBars)
-                //     so it always sits just above the keyboard / nav bar.
         ) {
-            // Header — title reflects transaction type
+            // Header
             FormHeaderBar(
                 title     = if (editExpense != null) "Edit Transaction"
                             else when (form.transactionType) {
@@ -283,14 +310,12 @@ fun AddExpenseScreen(
                     .padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // ── Transaction Type selector (top of form, always visible) ───
+                // ── Transaction Type selector ──────────────────────────────────
                 if (editExpense == null) {
                     TopTypeSelector(
                         selected = form.transactionType,
                         onSelect = { newType ->
                             form.transactionType = newType
-                            // When switching to Income, clear category so user picks an income category
-                            // When switching away from Income, also clear so they pick an expense category
                             form.mainCat = null
                             form.subCat  = null
                         }
@@ -303,17 +328,16 @@ fun AddExpenseScreen(
                 // ── Amount ────────────────────────────────────────────────────
                 AmountField(form)
 
-                // ── Category → Subcategory (animated) ─────────────────────────
+                // ── Category icon grid + subcategory chips ────────────────────
                 CategorySection(
-                    form           = form,
-                    mainCategories = mainCategories,
-                    subList        = subList
+                    form              = form,
+                    mainCategories    = mainCategories,
+                    recentCategories  = recentCategories,
+                    subList           = subList,
+                    onCategoryTap     = { keyboard?.hide() }
                 )
 
                 // ── Transfer/Expense toggle (Family Support, EXPENSE tab only) ─
-                // Only shown when the user is on the Expense tab and selects
-                // "Family Support" sub-category — allows marking it as a Transfer.
-                // Hidden on the Transfer tab because the type is already set.
                 AnimatedVisibility(
                     visible = form.subCat?.name == "Family Support" &&
                               form.transactionType == TransactionType.EXPENSE,
@@ -332,14 +356,10 @@ fun AddExpenseScreen(
                     onPickerRequest = { showDatePicker = true }
                 )
 
-                // Extra space so the last field isn't hidden behind the confirm bar
                 Spacer(Modifier.height(4.dp))
             }
 
             // ── Confirm button — pinned, always visible ───────────────────────
-            // windowInsetsPadding(ime + navigationBars) keeps the button above
-            // the soft keyboard AND the system navigation bar in all cases,
-            // including when rendered inside a Dialog window.
             Surface(
                 modifier        = Modifier
                     .fillMaxWidth()
@@ -438,7 +458,6 @@ private fun FormHeaderBar(title: String, onDismiss: () -> Unit) {
             color      = MaterialTheme.colorScheme.onBackground,
             modifier   = Modifier.align(Alignment.Center)
         )
-        // Gradient accent line along the bottom of the header
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -465,13 +484,12 @@ private fun TitleField(form: AddExpenseFormState) {
         isError       = form.titleError != null,
         modifier      = Modifier
             .fillMaxWidth()
-            // Exclude from autofill traversal — expense titles are private
             .semantics { contentDescription = "Expense title" },
         shape         = RoundedCornerShape(14.dp),
         keyboardOptions = KeyboardOptions(
-            capitalization   = KeyboardCapitalization.Sentences,
-            imeAction        = ImeAction.Next,
-            autoCorrectEnabled = false      // prevent keyboard from logging/suggesting titles
+            capitalization     = KeyboardCapitalization.Sentences,
+            imeAction          = ImeAction.Next,
+            autoCorrectEnabled = false
         ),
         keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
         supportingText = {
@@ -491,13 +509,14 @@ private fun TitleField(form: AddExpenseFormState) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Amount field
+//  Amount field  — ImeAction.Next so keyboard dismisses toward category grid
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun AmountField(form: AddExpenseFormState) {
-    val focusManager    = LocalFocusManager.current
-    val currencyFmt     = remember { NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-IN")) }
+    val focusManager     = LocalFocusManager.current
+    val keyboard         = LocalSoftwareKeyboardController.current
+    val currencyFmt      = remember { NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-IN")) }
     val formattedPreview = remember(form.amount) {
         form.amount.toDoubleOrNull()?.takeIf { it > 0 }?.let { currencyFmt.format(it) }
     }
@@ -515,10 +534,15 @@ private fun AmountField(form: AddExpenseFormState) {
         shape         = RoundedCornerShape(14.dp),
         keyboardOptions = KeyboardOptions(
             keyboardType       = KeyboardType.Decimal,
-            imeAction          = ImeAction.Done,
-            autoCorrectEnabled = false      // no clipboard/suggestion bar over a financial field
+            // Next instead of Done → pressing ✓/Next on keyboard hides it and
+            // moves focus out, making the category grid immediately tappable.
+            imeAction          = ImeAction.Next,
+            autoCorrectEnabled = false
         ),
-        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+        keyboardActions = KeyboardActions(onNext = {
+            focusManager.clearFocus()   // hides keyboard
+            keyboard?.hide()
+        }),
         prefix        = { Text("₹ ", fontWeight = FontWeight.Medium) },
         supportingText = {
             Row(
@@ -539,53 +563,143 @@ private fun AmountField(form: AddExpenseFormState) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Category section
+//  Category section  — icon grid + subcategory chip row  (Option B + E)
 // ─────────────────────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun CategorySection(
-    form:           AddExpenseFormState,
-    mainCategories: List<Category>,
-    subList:        List<Category>
+    form:             AddExpenseFormState,
+    mainCategories:   List<Category>,
+    recentCategories: List<Category>,
+    subList:          List<Category>,
+    onCategoryTap:    () -> Unit       // called to dismiss keyboard
 ) {
-    var mainExpanded by remember { mutableStateOf(false) }
-    var subExpanded  by remember { mutableStateOf(false) }
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .animateContentSize(spring(stiffness = Spring.StiffnessMediumLow))
     ) {
-        // ── Main category ─────────────────────────────────────────────────────
-        StyledDropdown(
-            label     = "Category",
-            value     = form.mainCat?.let { "${it.icon}  ${it.name}" } ?: "",
-            expanded  = mainExpanded,
-            isError   = form.categoryError != null,
-            errorMsg  = form.categoryError?.message,
-            onToggle  = { mainExpanded = !mainExpanded; form.catTouched = true },
-            onDismiss = { mainExpanded = false }
+        // ── Section label ─────────────────────────────────────────────────────
+        Row(
+            modifier              = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment     = Alignment.CenterVertically
         ) {
-            mainCategories.forEach { cat ->
-                DropdownMenuItem(
-                    text = {
-                        Row(verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Box(
-                                modifier = Modifier.size(28.dp).clip(RoundedCornerShape(8.dp))
-                                    .background(categoryBadgeColor(cat.name).copy(alpha = 0.18f)),
-                                contentAlignment = Alignment.Center
-                            ) { Text(cat.icon, fontSize = 14.sp) }
-                            Text(cat.name, style = MaterialTheme.typography.bodyMedium)
-                        }
-                    },
-                    onClick = { form.mainCat = cat; form.subCat = null; mainExpanded = false }
+            Text(
+                text  = "Category",
+                style = MaterialTheme.typography.labelMedium,
+                color = if (form.categoryError != null)
+                            MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (form.mainCat != null) {
+                Text(
+                    text  = "✓ ${form.mainCat!!.icon} ${form.mainCat!!.name}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = XpensePrimary,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }
 
-        // ── Subcategory (slides in when a main category with subs is selected) ─
+        // Show category error after touch
+        if (form.categoryError != null) {
+            Text(
+                text  = form.categoryError!!.message,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // ── Option E: Recent row ──────────────────────────────────────────────
+        AnimatedVisibility(
+            visible = recentCategories.isNotEmpty(),
+            enter   = fadeIn(tween(200)) + expandVertically(),
+            exit    = fadeOut(tween(150)) + shrinkVertically()
+        ) {
+            Column {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(bottom = 6.dp)
+                ) {
+                    Icon(
+                        imageVector        = Icons.Default.History,
+                        contentDescription = null,
+                        tint               = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier           = Modifier.size(14.dp)
+                    )
+                    Text(
+                        text  = "Recent",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Row(
+                    modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    recentCategories.forEach { cat ->
+                        CategoryTile(
+                            category   = cat,
+                            isSelected = form.mainCat?.id == cat.id,
+                            isRecent   = true,
+                            modifier   = Modifier.weight(1f),
+                            onClick    = {
+                                onCategoryTap()
+                                form.mainCat = cat
+                                form.subCat  = null
+                                form.catTouched = true
+                            }
+                        )
+                    }
+                    // Fill remaining slots with invisible boxes to keep layout stable
+                    repeat(RecentCategoryStore.MAX_RECENT - recentCategories.size) {
+                        Spacer(Modifier.weight(1f))
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                // Divider between recent and full grid
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                )
+                Spacer(Modifier.height(10.dp))
+            }
+        }
+
+        // ── Option B: Full category icon grid (3 columns) ─────────────────────
+        FlowRow(
+            modifier              = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement   = Arrangement.spacedBy(8.dp),
+            maxItemsInEachRow     = 3
+        ) {
+            mainCategories.forEach { cat ->
+                CategoryTile(
+                    category   = cat,
+                    isSelected = form.mainCat?.id == cat.id,
+                    isRecent   = false,
+                    modifier   = Modifier.weight(1f),
+                    onClick    = {
+                        onCategoryTap()
+                        form.mainCat = cat
+                        form.subCat  = null
+                        form.catTouched = true
+                    }
+                )
+            }
+        }
+
+        // ── Subcategory chip row ──────────────────────────────────────────────
         AnimatedVisibility(
             visible = subList.isNotEmpty(),
             enter   = fadeIn(tween(200)) + expandVertically(spring(stiffness = Spring.StiffnessMedium)),
@@ -593,28 +707,126 @@ private fun CategorySection(
         ) {
             Column {
                 Spacer(Modifier.height(12.dp))
-                StyledDropdown(
-                    label     = "Subcategory  (optional)",
-                    value     = form.subCat?.name ?: "",
-                    expanded  = subExpanded,
-                    isError   = false,
-                    errorMsg  = null,
-                    onToggle  = { subExpanded = !subExpanded },
-                    onDismiss = { subExpanded = false }
-                ) {
-                    DropdownMenuItem(
-                        text    = { Text("— None —",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                        onClick = { form.subCat = null; subExpanded = false }
-                    )
-                    subList.forEach { sub ->
-                        DropdownMenuItem(
-                            text    = { Text(sub.name) },
-                            onClick = { form.subCat = sub; subExpanded = false }
-                        )
-                    }
-                }
+                Text(
+                    text  = "Subcategory  (optional)",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                )
+                SubcategoryChipRow(
+                    subList    = subList,
+                    selected   = form.subCat,
+                    onSelect   = { form.subCat = it }
+                )
             }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Single category tile  (used in grid and recent row)
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun CategoryTile(
+    category:   Category,
+    isSelected: Boolean,
+    isRecent:   Boolean,
+    modifier:   Modifier = Modifier,
+    onClick:    () -> Unit
+) {
+    val accentColor  = categoryBadgeColor(category.name)
+    val bgColor      = if (isSelected) accentColor.copy(alpha = 0.22f)
+                       else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+    val borderColor  = if (isSelected) accentColor else Color.Transparent
+    val borderWidth  = if (isSelected) 1.5.dp else 0.dp
+
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(bgColor)
+            .border(borderWidth, borderColor, RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp, horizontal = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        // Icon circle
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(accentColor.copy(alpha = if (isSelected) 0.30f else 0.15f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text     = category.icon.ifBlank { "📦" },
+                fontSize = 18.sp
+            )
+        }
+        Text(
+            text       = category.name,
+            style      = MaterialTheme.typography.labelSmall,
+            color      = if (isSelected) accentColor
+                         else MaterialTheme.colorScheme.onSurface,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+            maxLines   = 2,
+            textAlign  = androidx.compose.ui.text.style.TextAlign.Center,
+            lineHeight = 13.sp
+        )
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Subcategory chip row
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun SubcategoryChipRow(
+    subList:  List<Category>,
+    selected: Category?,
+    onSelect: (Category?) -> Unit
+) {
+    Row(
+        modifier              = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment     = Alignment.CenterVertically
+    ) {
+        // "None" chip
+        FilterChip(
+            selected = selected == null,
+            onClick  = { onSelect(null) },
+            label    = {
+                Text(
+                    "None",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontSize = 12.sp
+                )
+            },
+            colors = FilterChipDefaults.filterChipColors(
+                selectedContainerColor   = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f),
+                selectedLabelColor       = MaterialTheme.colorScheme.onSurface
+            )
+        )
+        subList.forEach { sub ->
+            val isSelected = selected?.id == sub.id
+            FilterChip(
+                selected = isSelected,
+                onClick  = { onSelect(sub) },
+                label    = {
+                    Text(
+                        sub.name,
+                        style    = MaterialTheme.typography.labelMedium,
+                        fontSize = 12.sp
+                    )
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor   = XpensePrimary.copy(alpha = 0.18f),
+                    selectedLabelColor       = XpensePrimary
+                )
+            )
         }
     }
 }
@@ -724,7 +936,6 @@ private fun TransactionTypeToggle(
                     }
                 }
         }
-        // Descriptive hint based on selection
         Text(
             text  = if (selected == TransactionType.TRANSFER)
                         "Transfer — excluded from expense totals"
@@ -774,48 +985,6 @@ private fun DateField(timestamp: Long, onPickerRequest: () -> Unit) {
 //  Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun StyledDropdown(
-    label:     String,
-    value:     String,
-    expanded:  Boolean,
-    isError:   Boolean,
-    errorMsg:  String?,
-    onToggle:  () -> Unit,
-    onDismiss: () -> Unit,
-    content:   @Composable () -> Unit
-) {
-    val chevronAngle by animateFloatAsState(
-        targetValue   = if (expanded) 180f else 0f,
-        animationSpec = tween(200),
-        label         = "chevron"
-    )
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { onToggle() }) {
-        OutlinedTextField(
-            value          = value,
-            onValueChange  = {},
-            label          = { Text(label) },
-            readOnly       = true,
-            isError        = isError,
-            singleLine     = true,
-            modifier       = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
-            shape          = RoundedCornerShape(14.dp),
-            trailingIcon   = {
-                Icon(
-                    Icons.Default.ArrowDropDown,
-                    contentDescription = null,
-                    modifier = Modifier.rotate(chevronAngle),
-                    tint = if (isError) MaterialTheme.colorScheme.error
-                           else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            },
-            supportingText = if (errorMsg != null) { { FieldErrorText(errorMsg) } } else null,
-            colors         = fieldColors(isError = isError)
-        )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = onDismiss) { content() }
-    }
-}
 
 @Composable
 private fun FieldErrorText(message: String?) {

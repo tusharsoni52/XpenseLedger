@@ -99,18 +99,18 @@ fun HomeScreen(
     val snackbarHostState  = remember { SnackbarHostState() }
 
     val exportLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("application/octet-stream")
-    ) { uri -> uri?.let { vm.exportData(it) } }
+        ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri -> uri?.let { vm.exportToExcel(it) } }
 
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
-    ) { uri -> uri?.let { vm.importData(it) } }
+    ) { uri -> uri?.let { vm.importFromExcel(it) } }
 
     LaunchedEffect(Unit) {
         vm.backupResult.collect { result ->
             val msg = when (result) {
-                is BackupResult.ExportSuccess -> "✅ Backup exported successfully"
-                is BackupResult.ImportSuccess -> "✅ Data imported successfully"
+                is BackupResult.ExportSuccess -> "✅ Excel file exported successfully"
+                is BackupResult.ImportSuccess -> "✅ Data imported from Excel successfully"
                 is BackupResult.Error         -> "❌ ${result.message}"
             }
             snackbarHostState.showSnackbar(msg)
@@ -145,13 +145,18 @@ fun HomeScreen(
                         expanded         = menuExpanded.value,
                         onDismissRequest = { menuExpanded.value = false }
                     ) {
-                        DropdownMenuItem(text = { Text("Export backup") }, onClick = {
+                        DropdownMenuItem(text = { Text("Export to Excel") }, onClick = {
                             menuExpanded.value = false
-                            exportLauncher.launch("xpenseledger_backup.xpbak")
+                            exportLauncher.launch("xpenseledger_export.csv")
                         })
-                        DropdownMenuItem(text = { Text("Import backup") }, onClick = {
+                        DropdownMenuItem(text = { Text("Import from Excel") }, onClick = {
                             menuExpanded.value = false
-                            importLauncher.launch(arrayOf("application/octet-stream", "*/*"))
+                            importLauncher.launch(arrayOf(
+                                "text/csv",
+                                "text/comma-separated-values",
+                                "application/csv",
+                                "*/*"
+                            ))
                         })
                     }
                 }
@@ -414,13 +419,6 @@ private fun TypeFilterRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment     = Alignment.CenterVertically
     ) {
-        // "All" chip
-        TypeChip(
-            label    = "All",
-            selected = active == null,
-            color    = MaterialTheme.colorScheme.primary,
-            onClick  = { onSelect(null) }
-        )
         TypeChip(label = "Income",   selected = active == TransactionType.INCOME,
             color = incomeColor,   onClick = { onSelect(TransactionType.INCOME) })
         TypeChip(label = "Expenses", selected = active == TransactionType.EXPENSE,

@@ -18,8 +18,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.xpenseledger.app.ui.components.AddExpenseFab
 import com.xpenseledger.app.ui.screens.add.AddExpenseScreen
+import com.xpenseledger.app.ui.screens.add.AddExpenseViewModel
 import com.xpenseledger.app.ui.screens.comparison.ComparisonScreen
 import com.xpenseledger.app.ui.screens.home.HomeScreen
 import com.xpenseledger.app.ui.screens.profile.ProfileScreen
@@ -115,21 +117,25 @@ fun AppNavGraph(
                 enterTransition   = { slideInHorizontally(tween(280)) { it } + fadeIn(tween(280)) },
                 exitTransition    = { slideOutHorizontally(tween(240)) { it } + fadeOut(tween(240)) },
                 popExitTransition = { slideOutHorizontally(tween(240)) { it } + fadeOut(tween(240)) }
-            ) {
+            ) { backStackEntry ->
+                // Scoped to this NavBackStackEntry — survives session lock overlay
+                val formVm: AddExpenseViewModel = hiltViewModel(backStackEntry)
                 // Capture editing expense in local variable (non-delegated) to enable smart cast
                 val currentEditingExpense = editingExpense
-                
+
                 AddExpenseScreen(
-                    editExpense  = currentEditingExpense,  // Now passes the editing expense (null if adding)
+                    editExpense  = currentEditingExpense,
                     categoryVm   = categoryVm,
-                    onDismiss    = { 
+                    formVm       = formVm,
+                    onDismiss    = {
                         expenseVm.clearEditingExpense()
-                        navController.popBackStack() 
+                        // User explicitly cancelled — clear the draft so next open is fresh
+                        if (currentEditingExpense == null) formVm.clearForm()
+                        navController.popBackStack()
                     },
                     onConfirm    = { title, amount, category, subCategory,
                                      categoryId, subCategoryId, timestamp, type ->
                         if (currentEditingExpense != null) {
-                            // Update existing expense — preserve type
                             expenseVm.updateExpense(currentEditingExpense.copy(
                                 title         = title,
                                 amount        = amount,
@@ -141,7 +147,6 @@ fun AppNavGraph(
                                 type          = type
                             ))
                         } else {
-                            // Add new expense — pass type through
                             expenseVm.addExpense(
                                 title         = title,
                                 amount        = amount,

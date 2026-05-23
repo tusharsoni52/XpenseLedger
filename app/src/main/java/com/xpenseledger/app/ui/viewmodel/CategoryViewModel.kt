@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.xpenseledger.app.domain.model.Category
 import com.xpenseledger.app.domain.model.TransactionType
 import com.xpenseledger.app.domain.repository.CategoryRepository
+import com.xpenseledger.app.ui.screens.add.RecentCategoryStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -36,7 +37,8 @@ private const val ID_FAMILY_SUPPORT  = 78L    // "Family Support" SUB under Fina
 
 @HiltViewModel
 class CategoryViewModel @Inject constructor(
-    private val repo: CategoryRepository
+    private val repo: CategoryRepository,
+    private val recentStore: RecentCategoryStore
 ) : ViewModel() {
 
     init {
@@ -90,4 +92,18 @@ class CategoryViewModel @Inject constructor(
     /** Synchronous — safe because allCategories is Eagerly shared. */
     fun categoryById(id: Long): Category? =
         allCategories.value.firstOrNull { it.id == id }
+
+    // ── Recent category tracking ──────────────────────────────────────────────
+
+    /** Returns up to 3 recently-used main categories, preserving recency order. */
+    fun recentMainCategories(): List<Category> {
+        val recentIds = recentStore.getRecent()
+        val mains = allCategories.value.filter { it.type == "MAIN" }
+        return recentIds.mapNotNull { id -> mains.firstOrNull { it.id == id } }
+    }
+
+    /** Should be called after a successful form submit with the chosen main category id. */
+    fun recordRecentCategory(categoryId: Long) {
+        recentStore.record(categoryId)
+    }
 }

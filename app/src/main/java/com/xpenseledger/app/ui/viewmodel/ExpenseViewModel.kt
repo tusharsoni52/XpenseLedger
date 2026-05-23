@@ -8,6 +8,8 @@ import com.xpenseledger.app.domain.model.TransactionType
 import com.xpenseledger.app.domain.repository.ExpenseRepository
 import com.xpenseledger.app.domain.usecase.ExportExpensesUseCase
 import com.xpenseledger.app.domain.usecase.ImportExpensesUseCase
+import com.xpenseledger.app.domain.usecase.ExportToExcelUseCase
+import com.xpenseledger.app.domain.usecase.ImportFromExcelUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -82,6 +84,8 @@ class ExpenseViewModel @Inject constructor(
     private val repo: ExpenseRepository,
     private val exportUseCase: ExportExpensesUseCase,
     private val importUseCase: ImportExpensesUseCase,
+    private val exportToExcelUseCase: ExportToExcelUseCase,
+    private val importFromExcelUseCase: ImportFromExcelUseCase,
 ) : ViewModel() {
 
     // ── Private mutable state ─────────────────────────────────────────────────
@@ -89,8 +93,8 @@ class ExpenseViewModel @Inject constructor(
     private val _query          = MutableStateFlow("")
     private val _selectedMonth  = MutableStateFlow<String?>(Companion.currentMonthKey())
     private val _editingExpense = MutableStateFlow<Expense?>(null)
-    /** null = show all types; set to a specific type to filter */
-    private val _typeFilter     = MutableStateFlow<TransactionType?>(null)
+    /** Default to showing expenses; set to a specific type to filter */
+    private val _typeFilter     = MutableStateFlow<TransactionType?>(TransactionType.EXPENSE)
 
     // ── Public read-only flows ────────────────────────────────────────────────
 
@@ -114,6 +118,7 @@ class ExpenseViewModel @Inject constructor(
         val query      = arr[1] as String
         val month      = arr[2] as String?
         val typeFilter = arr[3] as TransactionType?
+
 
         // ── All transactions in the selected month (for summary totals) ──────
         val monthList = list.filter { e ->
@@ -153,7 +158,7 @@ class ExpenseViewModel @Inject constructor(
         if (filtered.isEmpty() && monthList.isEmpty()) {
             DashboardUiState.Empty(
                 selectedMonth     = month ?: "All Months",
-                availableMonths   = availableMonths(),
+                availableMonths   = availableMonths(list),
                 transfersForMonth = transfersForMonth,
                 totalIncome       = totalIncome,
                 totalExpenses     = totalExpenses,
@@ -163,7 +168,7 @@ class ExpenseViewModel @Inject constructor(
         } else {
             DashboardUiState.Success(
                 selectedMonth     = month ?: "All Months",
-                availableMonths   = availableMonths(),
+                availableMonths   = availableMonths(list),
                 filteredExpenses  = filtered,
                 categoryEntries   = categoryEntries,
                 categoryExpenses  = categoryExpenses,
@@ -309,6 +314,30 @@ class ExpenseViewModel @Inject constructor(
         }
     }
 
+    fun exportToExcel(targetUri: Uri) {
+        viewModelScope.launch {
+            runCatching { exportToExcelUseCase(targetUri) }
+                .onSuccess { _backupResult.tryEmit(BackupResult.ExportSuccess) }
+                .onFailure { _backupResult.tryEmit(BackupResult.Error("Excel export failed. Please try again.")) }
+        }
+    }
+
+    fun importFromExcel(sourceUri: Uri) {
+        viewModelScope.launch {
+            runCatching { importFromExcelUseCase(sourceUri) }
+                .onSuccess { _backupResult.tryEmit(BackupResult.ImportSuccess) }
+                .onFailure { e ->
+                    val message = when {
+                        e.message?.contains("Cannot access") == true -> e.message!!
+                        e.message?.contains("Permission denied") == true -> e.message!!
+                        e.message?.contains("Failed to read") == true -> e.message!!
+                        else -> "Import failed. Please check the file format and try again."
+                    }
+                    _backupResult.tryEmit(BackupResult.Error(message))
+                }
+        }
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     fun monthKey(expense: Expense): String = FMT_MONTH.format(Date(expense.timestamp))
@@ -320,16 +349,23 @@ class ExpenseViewModel @Inject constructor(
 
         fun currentMonthKey(): String = FMT_MONTH.format(Date())
 
-        /** Returns 12 month keys: current month first, then previous 11. */
-        fun availableMonths(): List<String> {
-            val cal = java.util.Calendar.getInstance()
-            cal.set(java.util.Calendar.DAY_OF_MONTH, 1)
-            return buildList {
-                repeat(12) {
-                    add(FMT_MONTH.format(cal.time))
-                    cal.add(java.util.Calendar.MONTH, -1)
-                }
+        /**
+         * Returns the last 12 months starting from current month.
+         * Always shows 12 months regardless of expense data.
+         */
+        fun availableMonths(expenses: List<Expense>): List<String> {
+            val calendar = java.util.Calendar.getInstance()
+            val months = mutableListOf<String>()
+            
+            // Generate last 12 months (current month + previous 11)
+            repeat(12) { index ->
+                val monthKey = FMT_MONTH.format(calendar.time)
+                months.add(monthKey)
+                // Move to previous month
+                calendar.add(java.util.Calendar.MONTH, -1)
             }
+            
+            return months // Already in reverse chronological order (most recent first)
         }
     }
 }

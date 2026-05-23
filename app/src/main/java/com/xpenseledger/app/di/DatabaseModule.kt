@@ -3,6 +3,7 @@ package com.xpenseledger.app.di
 import android.content.Context
 import androidx.room.Room
 import com.xpenseledger.app.data.local.db.AppDatabase
+import com.xpenseledger.app.data.local.db.AutoBackupCallback
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -29,9 +30,15 @@ object DatabaseModule {
                 AppDatabase.MIGRATION_4_5,
                 AppDatabase.MIGRATION_5_6,
                 AppDatabase.MIGRATION_6_7,
-                AppDatabase.MIGRATION_7_8
+                AppDatabase.MIGRATION_7_8,
+                AppDatabase.MIGRATION_8_9
             )
-            .fallbackToDestructiveMigration()
+            // Add automatic backup callback to prevent data loss
+            .addCallback(AutoBackupCallback(context))
+            // REMOVED: .fallbackToDestructiveMigration()
+            // This was causing SILENT DATA LOSS on migration failures.
+            // Better to crash with clear error than lose user's expense data.
+            // If migration fails, user will see error and can restore from backup.
             .build()
     }
 

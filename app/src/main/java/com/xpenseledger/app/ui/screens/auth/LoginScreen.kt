@@ -115,6 +115,9 @@ fun LoginScreen(
     var dotState       by remember { mutableStateOf(PinDotState.NORMAL) }
     val snackbarState   = remember { SnackbarHostState() }
 
+    // ── Guard: fire biometric at most once per lock session ──────────────────
+    var biometricTriggered by remember { mutableStateOf(false) }
+
     // ── Slow lock-ring pulse (non-distracting) ────────────────────────────────
     val inf = rememberInfiniteTransition(label = "lockPulse")
     val pulseAlpha by inf.animateFloat(
@@ -147,10 +150,18 @@ fun LoginScreen(
         }
     }
 
-    // ── Biometric auth trigger (only when in UNLOCK mode) ──────────────────────
-    LaunchedEffect(mode, canUseBiometrics, biometricAuthManager) {
-        if (mode == AuthMode.UNLOCK && canUseBiometrics && biometricAuthManager != null)
+    // ── Biometric auth trigger (only when in UNLOCK mode, only once per lock) ─
+    // Key on `mode` so the flag resets if the user navigates to SET_PIN etc.
+    LaunchedEffect(mode) {
+        // Reset trigger whenever mode changes so a fresh lock shows biometric again
+        if (mode != AuthMode.UNLOCK) {
+            biometricTriggered = false
+            return@LaunchedEffect
+        }
+        if (!biometricTriggered && canUseBiometrics && biometricAuthManager != null) {
+            biometricTriggered = true
             biometricAuthManager.authenticate { success -> if (success) vm.onBiometricSuccess() }
+        }
     }
 
     Box(Modifier.fillMaxSize()) {
