@@ -30,6 +30,7 @@ import com.xpenseledger.app.ui.viewmodel.CategoryViewModel
 import com.xpenseledger.app.ui.viewmodel.ExpenseViewModel
 import com.xpenseledger.app.ui.viewmodel.SessionViewModel
 import com.xpenseledger.app.ui.viewmodel.UserProfileViewModel
+import com.xpenseledger.app.notification.ui.NotificationListenerViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -82,6 +83,7 @@ private fun AppRoot() {
     val expenseVm:  ExpenseViewModel     = hiltViewModel()
     val categoryVm: CategoryViewModel    = hiltViewModel()
     val profileVm:  UserProfileViewModel = hiltViewModel()
+    val nlsVm:      NotificationListenerViewModel = hiltViewModel()
     val context = LocalContext.current
 
     val biometricManager  = BiometricManager.from(context)
@@ -102,6 +104,7 @@ private fun AppRoot() {
             expenseVm      = expenseVm,
             categoryVm     = categoryVm,
             profileVm      = profileVm,
+            nlsVm          = nlsVm,
             onUserActivity = { sessionVm.onUserInteraction() },
             onLogout       = { sessionVm.lock() }
         )

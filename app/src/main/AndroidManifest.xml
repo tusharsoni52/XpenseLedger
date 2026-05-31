@@ -2,6 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- POST_NOTIFICATIONS required on Android 13+ to show confirmation notifications -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- BIND_NOTIFICATION_LISTENER_SERVICE is granted automatically by the system
+         when the user enables the app in Notification Access settings -->
+
     <application
         android:name=".XpenseLedgerApp"
         android:allowBackup="false"
@@ -10,6 +15,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.XpenseLedger">
+
         <activity
             android:name=".ui.activity.MainActivity"
             android:exported="true"
@@ -17,10 +23,39 @@
             android:theme="@style/Theme.XpenseLedger">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- ── Notification Listener Service ──────────────────────────────── -->
+        <!-- The system binds to this service when the user grants Notification Access.
+             It has zero battery impact — it's bound, not started. -->
+        <service
+            android:name=".notification.service.XpenseNotificationListenerService"
+            android:exported="true"
+            android:label="XpenseLedger Auto-Detect"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+            <!-- Human-readable description shown in the system Notification Access screen -->
+            <meta-data
+                android:name="android.service.notification.default_filter_types"
+                android:value="conversations,alerts" />
+        </service>
+
+        <!-- ── Notification Action Receiver ──────────────────────────────── -->
+        <!-- Handles ✓ Add / ✏ Edit / ✗ Dismiss taps on confirmation notifications -->
+        <receiver
+            android:name=".notification.receiver.NotificationActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.xpenseledger.ACTION_ADD_PENDING" />
+                <action android:name="com.xpenseledger.ACTION_EDIT_PENDING" />
+                <action android:name="com.xpenseledger.ACTION_DISMISS_PENDING" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>

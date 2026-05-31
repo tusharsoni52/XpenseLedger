@@ -93,8 +93,8 @@ class ExpenseViewModel @Inject constructor(
     private val _query          = MutableStateFlow("")
     private val _selectedMonth  = MutableStateFlow<String?>(Companion.currentMonthKey())
     private val _editingExpense = MutableStateFlow<Expense?>(null)
-    /** Default to showing expenses; set to a specific type to filter */
-    private val _typeFilter     = MutableStateFlow<TransactionType?>(TransactionType.EXPENSE)
+    /** Default to showing all transactions; set to a specific type to filter */
+    private val _typeFilter     = MutableStateFlow<TransactionType?>(null)
 
     // ── Public read-only flows ────────────────────────────────────────────────
 
@@ -221,6 +221,18 @@ class ExpenseViewModel @Inject constructor(
             .associate { it.key to it.value }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyMap())
 
+    /**
+     * Recent activity: all transactions from the last [RECENT_DAYS] days,
+     * sorted newest-first and grouped by calendar day for the Recent tab.
+     */
+    val recentActivity: StateFlow<List<Expense>> = expenses
+        .map { list ->
+            val cutoff = System.currentTimeMillis() - RECENT_DAYS * 24L * 60 * 60 * 1000
+            list.filter { it.timestamp >= cutoff }
+                .sortedByDescending { it.timestamp }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
+
     /** Per-month totals with category breakdown — all types included. */
     val monthComparison: StateFlow<List<MonthData>> = expenses
         .map { list ->
@@ -338,6 +350,24 @@ class ExpenseViewModel @Inject constructor(
         _editingExpense.value = null
     }
 
+    /**
+     * Pre-fills the editing-expense slot with data from an auto-detected
+     * [PendingTransaction] so AddExpenseScreen opens pre-filled.
+     */
+    fun prefillFromPending(tx: com.xpenseledger.app.notification.model.PendingTransaction) {
+        _editingExpense.value = Expense(
+            id            = 0L,   // new entry
+            title         = tx.merchant.ifBlank { tx.sourceLabel },
+            amount        = tx.amount,
+            category      = tx.category,
+            subCategory   = tx.subCategory,
+            categoryId    = tx.categoryId,
+            subCategoryId = tx.subCategoryId,
+            timestamp     = tx.detectedAt,
+            type          = TransactionType.fromString(tx.transactionType)
+        )
+    }
+
     // ── Backup / Restore ──────────────────────────────────────────────────────
 
     private val _backupResult = MutableSharedFlow<BackupResult>(extraBufferCapacity = 1)
@@ -391,6 +421,9 @@ class ExpenseViewModel @Inject constructor(
 
 
     companion object {
+        /** Number of days shown in the Recent Activity tab. */
+        const val RECENT_DAYS = 15L
+
         /** Reused formatter — never recreated per-call */
         private val FMT_MONTH = SimpleDateFormat("yyyy-MM", Locale.US)
 

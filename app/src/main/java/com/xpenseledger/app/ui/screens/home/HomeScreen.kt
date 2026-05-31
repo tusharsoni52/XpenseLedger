@@ -37,8 +37,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,9 +48,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
@@ -57,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.material.icons.filled.Search
 import com.xpenseledger.app.domain.model.Expense
 import com.xpenseledger.app.domain.model.TransactionType
 import com.xpenseledger.app.ui.components.CategoryBreakdownCard
@@ -188,174 +193,222 @@ private fun DashboardContent(
     val editingExpense     = remember { mutableStateOf<Expense?>(null) }
     val searchText         = rememberSaveable { mutableStateOf("") }
     var expandedCategories by remember { mutableStateOf(emptySet<String>()) }
+    val snackbarHostState  = remember { SnackbarHostState() }
+    val scope              = rememberCoroutineScope()
 
-    AnimatedContent(
-        targetState    = uiState,
-        transitionSpec = { fadeIn() togetherWith fadeOut() },
-        label          = "dashboardState",
-        modifier       = modifier.fillMaxSize()
-    ) { state ->
+    // Undo-delete support
+    var lastDeleted by remember { mutableStateOf<Expense?>(null) }
 
-        when (state) {
-            // ── Loading ───────────────────────────────────────────────────────
-            is DashboardUiState.Loading -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(
-                        color    = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(48.dp)
-                    )
-                }
+    fun onDeleteWithUndo(expense: Expense) {
+        lastDeleted = expense
+        vm.deleteExpense(expense)
+        scope.launch {
+            val result = snackbarHostState.showSnackbar(
+                message      = "Transaction deleted",
+                actionLabel  = "Undo",
+                duration     = SnackbarDuration.Short
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                lastDeleted?.let { vm.addExpense(
+                    title         = it.title,
+                    amount        = it.amount,
+                    category      = it.category,
+                    subCategory   = it.subCategory,
+                    categoryId    = it.categoryId,
+                    subCategoryId = it.subCategoryId,
+                    timestamp     = it.timestamp,
+                    type          = it.type
+                ) }
             }
+            lastDeleted = null
+        }
+    }
 
-            // ── Empty ─────────────────────────────────────────────────────────
-            is DashboardUiState.Empty -> {
-                LazyColumn(
-                    modifier            = Modifier.fillMaxSize(),
-                    contentPadding      = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    item(key = "monthFilter") {
-                        MonthFilterRow(
-                            months        = state.availableMonths,
-                            selectedMonth = state.selectedMonth,
-                            onSelect      = { vm.selectMonth(it) }
+    Box(modifier = modifier.fillMaxSize()) {
+        AnimatedContent(
+            targetState    = uiState,
+            transitionSpec = { fadeIn() togetherWith fadeOut() },
+            label          = "dashboardState",
+            modifier       = Modifier.fillMaxSize()
+        ) { state ->
+
+            when (state) {
+                // ── Loading ───────────────────────────────────────────────────────
+                is DashboardUiState.Loading -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(
+                            color    = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(48.dp)
                         )
                     }
-                    item(key = "summaryCard") {
-                        FinancialSummaryCard(
-                            totalIncome    = state.totalIncome,
-                            totalExpenses  = state.totalExpenses,
-                            totalTransfers = state.totalTransfers,
-                            balance        = state.balance,
-                            period         = monthLabel(state.selectedMonth)
-                        )
-                    }
-                    item(key = "search") {
-                        InputField(
-                            value         = searchText.value,
-                            onValueChange = { searchText.value = it; vm.setQuery(it) },
-                            label         = "Search transactions"
-                        )
-                    }
-                    item(key = "typeFilter") {
-                        TypeFilterRow(
-                            active   = activeTypeFilter,
-                            onSelect = { vm.setTypeFilter(it) }
-                        )
-                    }
-                    item(key = "empty") { EmptyExpenseState() }
-                    item(key = "bottom_space") { Spacer(Modifier.height(16.dp)) }
                 }
-            }
 
-            // ── Success ───────────────────────────────────────────────────────
-            is DashboardUiState.Success -> {
-                LazyColumn(
-                    modifier            = Modifier.fillMaxSize(),
-                    contentPadding      = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    item(key = "monthFilter") {
-                        MonthFilterRow(
-                            months        = state.availableMonths,
-                            selectedMonth = state.selectedMonth,
-                            onSelect      = { vm.selectMonth(it) }
-                        )
-                    }
-
-                    item(key = "summaryCard") {
-                        FinancialSummaryCard(
-                            totalIncome    = state.totalIncome,
-                            totalExpenses  = state.totalExpenses,
-                            totalTransfers = state.totalTransfers,
-                            balance        = state.balance,
-                            period         = monthLabel(state.selectedMonth)
-                        )
-                    }
-
-                    item(key = "search") {
-                        InputField(
-                            value         = searchText.value,
-                            onValueChange = { searchText.value = it; vm.setQuery(it) },
-                            label         = "Search transactions"
-                        )
-                    }
-
-                    item(key = "typeFilter") {
-                        TypeFilterRow(
-                            active   = activeTypeFilter,
-                            onSelect = { vm.setTypeFilter(it) }
-                        )
-                    }
-
-                    // ── Expense category breakdown (only when showing Expenses or All) ──
-                    val showCategoryBreakdown = activeTypeFilter == null ||
-                                               activeTypeFilter == TransactionType.EXPENSE
-                    if (showCategoryBreakdown && state.categoryEntries.isNotEmpty()) {
-                        item(key = "catHeader") {
-                            SectionHeader(
-                                title    = "By Category · ${monthLabel(state.selectedMonth)}",
-                                modifier = Modifier.padding(top = 4.dp)
+                // ── Empty ─────────────────────────────────────────────────────────
+                is DashboardUiState.Empty -> {
+                    LazyColumn(
+                        modifier            = Modifier.fillMaxSize(),
+                        contentPadding      = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        item(key = "monthFilter") {
+                            MonthFilterRow(
+                                months        = state.availableMonths,
+                                selectedMonth = state.selectedMonth,
+                                onSelect      = { vm.selectMonth(it) }
                             )
                         }
-                        itemsIndexed(
-                            items = state.categoryEntries,
-                            key   = { _, e -> "cat_${e.first}" }
-                        ) { idx, (category, amount) ->
-                            CategoryBreakdownCard(
-                                category   = category,
-                                amount     = amount,
-                                fraction   = if (state.grandTotal > 0)
-                                                 (amount / state.grandTotal).toFloat() else 0f,
-                                index      = idx,
-                                expenses   = state.categoryExpenses[category] ?: emptyList(),
-                                isExpanded = expandedCategories.contains(category),
-                                onToggle   = {
-                                    expandedCategories =
-                                        if (expandedCategories.contains(category))
-                                            expandedCategories - category
-                                        else
-                                            expandedCategories + category
-                                },
-                                onEdit     = { editingExpense.value = it },
-                                onDelete   = { vm.deleteExpense(it) },
-                                modifier   = Modifier.animateItem()
+                        item(key = "summaryCard") {
+                            FinancialSummaryCard(
+                                totalIncome    = state.totalIncome,
+                                totalExpenses  = state.totalExpenses,
+                                totalTransfers = state.totalTransfers,
+                                balance        = state.balance,
+                                period         = monthLabel(state.selectedMonth)
                             )
                         }
+                        item(key = "search") {
+                            InputField(
+                                value         = searchText.value,
+                                onValueChange = { searchText.value = it; vm.setQuery(it) },
+                                label         = "Search transactions",
+                                leadingIcon   = {
+                                    Icon(Icons.Default.Search, contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            )
+                        }
+                        item(key = "typeFilter") {
+                            TypeFilterRow(
+                                active   = activeTypeFilter,
+                                onSelect = { vm.setTypeFilter(it) }
+                            )
+                        }
+                        item(key = "empty") { EmptyExpenseState() }
+                        item(key = "bottom_space") { Spacer(Modifier.height(16.dp)) }
                     }
+                }
 
-                    // ── Unified transaction list ───────────────────────────────
-                    // Shown for Income, Transfer, or when category breakdown is off
-                    val showTransactionList = activeTypeFilter != null &&
-                                             activeTypeFilter != TransactionType.EXPENSE
-                    if (showTransactionList && state.filteredExpenses.isNotEmpty()) {
-                        item(key = "txHeader") {
-                            SectionHeader(
-                                title = when (activeTypeFilter) {
-                                    TransactionType.INCOME   -> "Income · ${monthLabel(state.selectedMonth)}"
-                                    TransactionType.TRANSFER -> "Transfers · ${monthLabel(state.selectedMonth)}"
-                                    else                     -> "Transactions · ${monthLabel(state.selectedMonth)}"
-                                },
-                                modifier = Modifier.padding(top = 4.dp)
+                // ── Success ───────────────────────────────────────────────────────
+                is DashboardUiState.Success -> {
+                    LazyColumn(
+                        modifier            = Modifier.fillMaxSize(),
+                        contentPadding      = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        item(key = "monthFilter") {
+                            MonthFilterRow(
+                                months        = state.availableMonths,
+                                selectedMonth = state.selectedMonth,
+                                onSelect      = { vm.selectMonth(it) }
                             )
                         }
-                        itemsIndexed(
-                            items = state.filteredExpenses,
-                            key   = { _, e -> "tx_${e.id}" }
-                        ) { _, expense ->
-                            TransactionRow(
-                                expense  = expense,
-                                onEdit   = { editingExpense.value = it },
-                                onDelete = { vm.deleteExpense(it) },
-                                modifier = Modifier.animateItem()
+
+                        item(key = "summaryCard") {
+                            FinancialSummaryCard(
+                                totalIncome    = state.totalIncome,
+                                totalExpenses  = state.totalExpenses,
+                                totalTransfers = state.totalTransfers,
+                                balance        = state.balance,
+                                period         = monthLabel(state.selectedMonth)
                             )
                         }
+
+                        item(key = "search") {
+                            InputField(
+                                value         = searchText.value,
+                                onValueChange = { searchText.value = it; vm.setQuery(it) },
+                                label         = "Search transactions",
+                                leadingIcon   = {
+                                    Icon(Icons.Default.Search, contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            )
+                        }
+
+                        item(key = "typeFilter") {
+                            TypeFilterRow(
+                                active   = activeTypeFilter,
+                                onSelect = { vm.setTypeFilter(it) }
+                            )
+                        }
+
+                        // ── Expense category breakdown (only when showing Expenses or All) ──
+                        val showCategoryBreakdown = activeTypeFilter == null ||
+                                                   activeTypeFilter == TransactionType.EXPENSE
+                        if (showCategoryBreakdown && state.categoryEntries.isNotEmpty()) {
+                            item(key = "catHeader") {
+                                SectionHeader(
+                                    title    = "By Category · ${monthLabel(state.selectedMonth)}",
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
+                            itemsIndexed(
+                                items = state.categoryEntries,
+                                key   = { _, e -> "cat_${e.first}" }
+                            ) { idx, (category, amount) ->
+                                CategoryBreakdownCard(
+                                    category   = category,
+                                    amount     = amount,
+                                    fraction   = if (state.grandTotal > 0)
+                                                     (amount / state.grandTotal).toFloat() else 0f,
+                                    index      = idx,
+                                    expenses   = state.categoryExpenses[category] ?: emptyList(),
+                                    isExpanded = expandedCategories.contains(category),
+                                    onToggle   = {
+                                        expandedCategories =
+                                            if (expandedCategories.contains(category))
+                                                expandedCategories - category
+                                            else
+                                                expandedCategories + category
+                                    },
+                                    onEdit     = { editingExpense.value = it },
+                                    onDelete   = { onDeleteWithUndo(it) },
+                                    modifier   = Modifier.animateItem()
+                                )
+                            }
+                        }
+
+                        // ── Unified transaction list ───────────────────────────────
+                        // Shown for Income, Transfer, or when category breakdown is off
+                        val showTransactionList = activeTypeFilter != null &&
+                                                 activeTypeFilter != TransactionType.EXPENSE
+                        if (showTransactionList && state.filteredExpenses.isNotEmpty()) {
+                            item(key = "txHeader") {
+                                SectionHeader(
+                                    title = when (activeTypeFilter) {
+                                        TransactionType.INCOME   -> "Income · ${monthLabel(state.selectedMonth)}"
+                                        TransactionType.TRANSFER -> "Transfers · ${monthLabel(state.selectedMonth)}"
+                                        else                     -> "Transactions · ${monthLabel(state.selectedMonth)}"
+                                    },
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
+                            itemsIndexed(
+                                items = state.filteredExpenses,
+                                key   = { _, e -> "tx_${e.id}" }
+                            ) { _, expense ->
+                                TransactionRow(
+                                    expense  = expense,
+                                    onEdit   = { editingExpense.value = it },
+                                    onDelete = { onDeleteWithUndo(it) },
+                                    modifier = Modifier.animateItem()
+                                )
+                            }
+                        }
+
+                        item(key = "bottom_space") { Spacer(Modifier.height(80.dp)) }
                     }
-
-                    item(key = "bottom_space") { Spacer(Modifier.height(80.dp)) }
                 }
             }
         }
+
+        // Snackbar overlay
+        androidx.compose.material3.SnackbarHost(
+            hostState = snackbarHostState,
+            modifier  = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 80.dp)
+        )
     }
 
     // ── Edit overlay (Dialog) ─────────────────────────────────────────────────
@@ -419,6 +472,9 @@ private fun TypeFilterRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment     = Alignment.CenterVertically
     ) {
+        // "All" chip — clears filter
+        TypeChip(label = "All", selected = active == null,
+            color = Color(0xFF94A3B8), onClick = { onSelect(null) })
         TypeChip(label = "Income",   selected = active == TransactionType.INCOME,
             color = incomeColor,   onClick = { onSelect(TransactionType.INCOME) })
         TypeChip(label = "Expenses", selected = active == TransactionType.EXPENSE,

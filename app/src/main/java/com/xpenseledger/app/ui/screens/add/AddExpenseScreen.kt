@@ -74,7 +74,9 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -192,9 +194,11 @@ fun AddExpenseScreen(
     }
 
     val keyboard = LocalSoftwareKeyboardController.current
+    val haptic   = LocalHapticFeedback.current
 
     val safeConfirm = rememberDebouncedClick(debounceMs = 800L) {
         keyboard?.hide()
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
         form.touchAll()
         if (!form.isValid) return@rememberDebouncedClick
         // Record recently used category before calling onConfirm
@@ -334,7 +338,7 @@ fun AddExpenseScreen(
                     mainCategories    = mainCategories,
                     recentCategories  = recentCategories,
                     subList           = subList,
-                    onCategoryTap     = { keyboard?.hide() }
+                    onCategoryTap     = { keyboard?.hide(); haptic.performHapticFeedback(HapticFeedbackType.LongPress) }
                 )
 
                 // ── Transfer/Expense toggle (Family Support, EXPENSE tab only) ─
@@ -353,7 +357,8 @@ fun AddExpenseScreen(
                 // ── Date ──────────────────────────────────────────────────────
                 DateField(
                     timestamp       = form.timestamp,
-                    onPickerRequest = { showDatePicker = true }
+                    onPickerRequest = { showDatePicker = true },
+                    onQuickSelect   = { form.timestamp = it }
                 )
 
                 Spacer(Modifier.height(4.dp))
@@ -953,31 +958,71 @@ private fun TransactionTypeToggle(
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun DateField(timestamp: Long, onPickerRequest: () -> Unit) {
+private fun DateField(timestamp: Long, onPickerRequest: () -> Unit, onQuickSelect: (Long) -> Unit = {}) {
     val dateFmt = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
-    Box(Modifier.fillMaxWidth()) {
-        OutlinedTextField(
-            value         = dateFmt.format(Date(timestamp)),
-            onValueChange = {},
-            label         = { Text("Date") },
-            enabled       = false,
-            singleLine    = true,
-            modifier      = Modifier.fillMaxWidth(),
-            shape         = RoundedCornerShape(14.dp),
-            trailingIcon  = {
-                Icon(Icons.Default.DateRange, contentDescription = "Pick date",
-                    tint = MaterialTheme.colorScheme.primary)
-            },
-            colors = OutlinedTextFieldDefaults.colors(
-                disabledTextColor         = MaterialTheme.colorScheme.onSurface,
-                disabledBorderColor       = MaterialTheme.colorScheme.outline,
-                disabledLabelColor        = MaterialTheme.colorScheme.onSurfaceVariant,
-                disabledTrailingIconColor = MaterialTheme.colorScheme.primary,
-                disabledContainerColor    = Color.Transparent
+
+    // Quick-select helpers
+    val todayMidnight = remember {
+        Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 12); set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+    }
+    val yesterdayMidnight = remember { todayMidnight - 86_400_000L }
+
+    Column(Modifier.fillMaxWidth()) {
+        // Quick-select chips row
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(bottom = 6.dp)
+        ) {
+            val todayKey = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(todayMidnight))
+            val selectedKey = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(timestamp))
+            FilterChip(
+                selected = selectedKey == todayKey,
+                onClick  = { onQuickSelect(todayMidnight) },
+                label    = { Text("Today", style = MaterialTheme.typography.labelMedium, fontSize = 12.sp) },
+                colors   = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = XpensePrimary.copy(alpha = 0.20f),
+                    selectedLabelColor     = XpensePrimary
+                )
             )
-        )
-        // Invisible overlay captures clicks while the TextField is disabled
-        Box(Modifier.matchParentSize().clickable(onClick = onPickerRequest))
+            val yestKey = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(yesterdayMidnight))
+            FilterChip(
+                selected = selectedKey == yestKey,
+                onClick  = { onQuickSelect(yesterdayMidnight) },
+                label    = { Text("Yesterday", style = MaterialTheme.typography.labelMedium, fontSize = 12.sp) },
+                colors   = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = XpensePrimary.copy(alpha = 0.20f),
+                    selectedLabelColor     = XpensePrimary
+                )
+            )
+        }
+
+        Box(Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value         = dateFmt.format(Date(timestamp)),
+                onValueChange = {},
+                label         = { Text("Date") },
+                enabled       = false,
+                singleLine    = true,
+                modifier      = Modifier.fillMaxWidth(),
+                shape         = RoundedCornerShape(14.dp),
+                trailingIcon  = {
+                    Icon(Icons.Default.DateRange, contentDescription = "Pick date",
+                        tint = MaterialTheme.colorScheme.primary)
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledTextColor         = MaterialTheme.colorScheme.onSurface,
+                    disabledBorderColor       = MaterialTheme.colorScheme.outline,
+                    disabledLabelColor        = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledTrailingIconColor = MaterialTheme.colorScheme.primary,
+                    disabledContainerColor    = Color.Transparent
+                )
+            )
+            // Invisible overlay captures clicks while the TextField is disabled
+            Box(Modifier.matchParentSize().clickable(onClick = onPickerRequest))
+        }
     }
 }
 

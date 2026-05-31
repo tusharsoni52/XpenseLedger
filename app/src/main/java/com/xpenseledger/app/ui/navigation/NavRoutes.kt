@@ -2,9 +2,11 @@ package com.xpenseledger.app.ui.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -15,10 +17,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
  * [bottomNavItems] lists the three items shown in the BottomNavBar in order.
  */
 sealed class Screen(val route: String) {
-    object Home       : Screen("home")
-    object AddExpense : Screen("add_expense")   // kept for navigation — not shown in bottom bar
-    object Analytics  : Screen("analytics")
-    object Profile    : Screen("profile")
+    object Home                    : Screen("home")
+    object AddExpense              : Screen("add_expense")
+    object Recent                  : Screen("recent")
+    object Analytics               : Screen("analytics")
+    object Profile                 : Screen("profile")
+    object NlsSettings             : Screen("nls_settings")
+    object PendingTransactions     : Screen("pending_transactions")
 }
 
 data class BottomNavItem(
@@ -37,8 +42,14 @@ val bottomNavItems = listOf(
         defaultIcon  = Icons.Outlined.Home
     ),
     BottomNavItem(
+        screen       = Screen.Recent,
+        label        = "Recent",
+        selectedIcon = Icons.Filled.History,
+        defaultIcon  = Icons.Outlined.History
+    ),
+    BottomNavItem(
         screen       = Screen.Analytics,
-        label        = "Analytics",
+        label        = "Insights",
         selectedIcon = Icons.Filled.BarChart,
         defaultIcon  = Icons.Outlined.BarChart
     ),

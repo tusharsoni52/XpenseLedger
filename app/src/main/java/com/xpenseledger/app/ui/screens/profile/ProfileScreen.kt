@@ -61,6 +61,11 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.xpenseledger.app.notification.ui.NotificationListenerOnboardingCard
+import com.xpenseledger.app.notification.ui.NotificationListenerViewModel
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import com.xpenseledger.app.ui.security.rememberDebouncedClick
 import com.xpenseledger.app.ui.theme.XpensePrimary
 import com.xpenseledger.app.ui.theme.XpenseSecondary
@@ -72,13 +77,21 @@ private val GENDER_OPTIONS = listOf("Male", "Female", "Other", "Prefer not to sa
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    profileVm:  UserProfileViewModel,
-    onLogout:   () -> Unit
+    profileVm:        UserProfileViewModel,
+    nlsVm:            NotificationListenerViewModel,
+    onLogout:         () -> Unit,
+    onOpenNlsSettings: () -> Unit
 ) {
     val profile        by profileVm.profile.collectAsState()
     val snackbarState  = remember { SnackbarHostState() }
     val scope          = rememberCoroutineScope()
     var showLogoutDlg  by remember { mutableStateOf(false) }
+
+    // NLS onboarding state
+    var showOnboarding by rememberSaveable {
+        mutableStateOf(!nlsVm.prefs.onboardingDismissed)
+    }
+    val pendingCount   by nlsVm.pendingCount.collectAsState()
 
     // Editable local state — pre-filled from saved profile
     var name   by rememberSaveable(profile.name)   { mutableStateOf(profile.name) }
@@ -290,7 +303,81 @@ fun ProfileScreen(
                 color     = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
             )
 
-            // ── Logout ────────────────────────────────────────────────────────
+            // ── Auto-Detect (NLS) section ─────────────────────────────────────
+            Text(
+                "Auto-Detect Expenses",
+                style      = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color      = XpensePrimary
+            )
+
+            // Onboarding card (dismissed after first interaction)
+            if (showOnboarding) {
+                NotificationListenerOnboardingCard(
+                    onDismiss = {
+                        showOnboarding = false
+                        nlsVm.prefs.onboardingDismissed = true
+                    }
+                )
+            }
+
+            // Settings entry row
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape    = RoundedCornerShape(14.dp),
+                colors   = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                onClick  = onOpenNlsSettings
+            ) {
+                Row(
+                    modifier              = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(
+                        imageVector        = Icons.Default.NotificationsActive,
+                        contentDescription = null,
+                        tint               = XpensePrimary,
+                        modifier           = Modifier.size(22.dp)
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Notification Listener Settings",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        if (pendingCount > 0) {
+                            Text(
+                                "$pendingCount pending transaction${if (pendingCount > 1) "s" else ""}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = XpenseSecondary
+                            )
+                        } else {
+                            Text(
+                                "Manage monitored apps & settings",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Text(
+                        "›",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // ── Divider ───────────────────────────────────────────────────────
+            HorizontalDivider(
+                modifier  = Modifier.padding(vertical = 8.dp),
+                thickness = 0.5.dp,
+                color     = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+            )
             Text(
                 "Account",
                 style      = MaterialTheme.typography.labelLarge,
@@ -303,12 +390,12 @@ fun ProfileScreen(
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 shape    = RoundedCornerShape(14.dp),
                 colors   = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             ) {
                 Text(
                     "Logout",
-                    color      = MaterialTheme.colorScheme.onErrorContainer,
+                    color      = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.SemiBold
                 )
             }

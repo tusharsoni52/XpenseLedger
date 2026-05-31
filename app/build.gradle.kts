@@ -25,7 +25,8 @@ android {
         debug {
             // Disable testOnly flag to prevent INSTALL_FAILED_VERIFICATION_FAILURE
             // and allow direct installation without -t flag
-            isTestCoverageEnabled = false
+            enableUnitTestCoverage = false
+            enableAndroidTestCoverage = false
             // Note: This is automatically set by Android Studio, but we explicitly
             // ensure it's not marked as testOnly for easier deployment
         }
@@ -84,9 +85,9 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     // Room / Hilt
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    ksp("androidx.room:room-compiler:2.6.1")
+    implementation("androidx.room:room-runtime:2.7.1")
+    implementation("androidx.room:room-ktx:2.7.1")
+    ksp("androidx.room:room-compiler:2.7.1")
     implementation("com.google.dagger:hilt-android:2.52")
     ksp("com.google.dagger:hilt-android-compiler:2.52")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
@@ -106,7 +107,16 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
     // CSV support for Excel-compatible export/import
-    implementation("com.opencsv:opencsv:5.9")
+    implementation("com.opencsv:opencsv:5.9") {
+        // Force-upgrade vulnerable transitive dependencies pulled in by opencsv:
+        //   commons-lang3   < 3.18.0 → CVE-2025-48924 (MEDIUM): StackOverflowError via uncontrolled recursion
+        //   commons-beanutils 1.9.4  → CVE-2025-48734 (HIGH):   Improper Access Control / RCE via ClassLoader
+        exclude(group = "org.apache.commons", module = "commons-lang3")
+        exclude(group = "commons-beanutils",  module = "commons-beanutils")
+    }
+    // Safe replacement versions
+    implementation("org.apache.commons:commons-lang3:3.18.0")
+    implementation("commons-beanutils:commons-beanutils:1.11.0")
 
     // Core library desugaring for Java 8+ API support on older Android versions
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")

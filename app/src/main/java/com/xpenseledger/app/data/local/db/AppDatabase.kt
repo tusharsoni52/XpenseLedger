@@ -6,13 +6,19 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.xpenseledger.app.data.local.dao.CategoryDao
 import com.xpenseledger.app.data.local.dao.ExpenseDao
+import com.xpenseledger.app.data.local.dao.PendingTransactionDao
 import com.xpenseledger.app.data.local.entity.CategoryEntity
 import com.xpenseledger.app.data.local.entity.ExpenseEntity
+import com.xpenseledger.app.data.local.entity.PendingTransactionEntity
 
-@Database(entities = [ExpenseEntity::class, CategoryEntity::class], version = 9)
+@Database(
+    entities = [ExpenseEntity::class, CategoryEntity::class, PendingTransactionEntity::class],
+    version = 10
+)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
     abstract fun categoryDao(): CategoryDao
+    abstract fun pendingTransactionDao(): PendingTransactionDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -238,6 +244,30 @@ abstract class AppDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // No database changes - version bump only
                 // This migration ensures proper version tracking after bug fix
+            }
+        }
+
+        /** v9 → v10 : Adds pending_transactions table for Notification Listener feature. */
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `pending_transactions` (
+                        `id`              INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `sourcePackage`   TEXT    NOT NULL,
+                        `sourceLabel`     TEXT    NOT NULL,
+                        `amount`          REAL    NOT NULL,
+                        `merchant`        TEXT    NOT NULL,
+                        `category`        TEXT    NOT NULL,
+                        `subCategory`     TEXT    NOT NULL,
+                        `categoryId`      INTEGER NOT NULL,
+                        `subCategoryId`   INTEGER,
+                        `transactionType` TEXT    NOT NULL,
+                        `rawText`         TEXT    NOT NULL,
+                        `detectedAt`      INTEGER NOT NULL,
+                        `dedupeHash`      TEXT    NOT NULL,
+                        `status`          TEXT    NOT NULL DEFAULT 'PENDING'
+                    )
+                """.trimIndent())
             }
         }
     }

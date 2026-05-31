@@ -25,9 +25,13 @@ import com.xpenseledger.app.ui.screens.add.AddExpenseViewModel
 import com.xpenseledger.app.ui.screens.comparison.ComparisonScreen
 import com.xpenseledger.app.ui.screens.home.HomeScreen
 import com.xpenseledger.app.ui.screens.profile.ProfileScreen
+import com.xpenseledger.app.ui.screens.recent.RecentScreen
 import com.xpenseledger.app.ui.viewmodel.CategoryViewModel
 import com.xpenseledger.app.ui.viewmodel.ExpenseViewModel
 import com.xpenseledger.app.ui.viewmodel.UserProfileViewModel
+import com.xpenseledger.app.notification.ui.NotificationListenerViewModel
+import com.xpenseledger.app.notification.ui.NotificationListenerSettingsScreen
+import com.xpenseledger.app.notification.ui.PendingTransactionsScreen
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -56,6 +60,7 @@ fun AppNavGraph(
     expenseVm:      ExpenseViewModel,
     categoryVm:     CategoryViewModel,
     profileVm:      UserProfileViewModel,
+    nlsVm:          NotificationListenerViewModel,
     onUserActivity: () -> Unit = {},
     onLogout:       () -> Unit = {},
     navController:  NavHostController = rememberNavController()
@@ -65,10 +70,14 @@ fun AppNavGraph(
     val editingExpense by expenseVm.editingExpense.collectAsState()
 
     // Routes where the bottom bar should be visible
-    val showBottomBar = currentRoute != Screen.AddExpense.route
+    val showBottomBar = currentRoute !in setOf(
+        Screen.AddExpense.route,
+        Screen.NlsSettings.route,
+        Screen.PendingTransactions.route
+    )
 
-    // Routes where the FAB should be visible (Home + Analytics only)
-    val showFab = currentRoute in setOf(Screen.Home.route, Screen.Analytics.route)
+    // Routes where the FAB should be visible (Home + Recent + Analytics only)
+    val showFab = currentRoute in setOf(Screen.Home.route, Screen.Recent.route, Screen.Analytics.route)
 
     Scaffold(
         containerColor      = Color.Transparent,
@@ -109,6 +118,11 @@ fun AppNavGraph(
             // ── Home ──────────────────────────────────────────────────────────
             composable(route = Screen.Home.route) {
                 HomeScreen(vm = expenseVm, categoryVm = categoryVm)
+            }
+
+            // ── Recent ────────────────────────────────────────────────────────
+            composable(route = Screen.Recent.route) {
+                RecentScreen(vm = expenseVm, categoryVm = categoryVm)
             }
 
             // ── Add Expense (full-screen, no bottom bar) ──────────────────────
@@ -175,8 +189,36 @@ fun AppNavGraph(
             // ── Profile ───────────────────────────────────────────────────────
             composable(route = Screen.Profile.route) {
                 ProfileScreen(
-                    profileVm = profileVm,
-                    onLogout  = onLogout
+                    profileVm  = profileVm,
+                    nlsVm      = nlsVm,
+                    onLogout   = onLogout,
+                    onOpenNlsSettings = { navController.navigate(Screen.NlsSettings.route) }
+                )
+            }
+
+            // ── NLS Settings ──────────────────────────────────────────────────
+            composable(route = Screen.NlsSettings.route) {
+                val pendingCount by nlsVm.pendingCount.collectAsState()
+                NotificationListenerSettingsScreen(
+                    vm           = nlsVm,
+                    pendingCount = pendingCount,
+                    onBack       = { navController.popBackStack() },
+                    onReviewPending = {
+                        navController.navigate(Screen.PendingTransactions.route)
+                    }
+                )
+            }
+
+            // ── Pending Transactions ──────────────────────────────────────────
+            composable(route = Screen.PendingTransactions.route) {
+                PendingTransactionsScreen(
+                    vm   = nlsVm,
+                    onBack = { navController.popBackStack() },
+                    onEditTransaction = { tx ->
+                        // Pre-fill AddExpense with the pending transaction data
+                        expenseVm.prefillFromPending(tx)
+                        navController.navigate(Screen.AddExpense.route)
+                    }
                 )
             }
         }
